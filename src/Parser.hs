@@ -6,67 +6,66 @@ import AutomatonTypes
 
 
 type Line = String
-type LineNumber = Int
 
--- TODO: refactor to not use !!. How can this be made more idiomatic?
--- TODO: maybe convert the Line data type to be (String, LineNumber)
--- TODO: Zac's idea of first mapping every line to be Line, and then using map and filter
+-- TODO: trim trailing whitespace
+-- TODO: use Maybe
 
--- TODO: return Maybe ProgramData type, and check that everything is valid
 parseProgram :: [Line] -> ProgramData
-parseProgram lns =
-   let hasInput = expect lns "% Input alphabet" 1
-       (inputLanguage, lineAfterAlphabet) = parseInputLanguage lns "" 2
-       hasSpec = expect lns "% Specification automaton" lineAfterAlphabet
-       hasTransition = expect lns "% Transition function" (lineAfterAlphabet + 1)
-       (transitionFunctions, lineAfterTransition) = parseTransitionFunctions lns [] (lineAfterAlphabet + 2)
-       hasStarting = expect lns "% Initial state" lineAfterTransition
-       (startingState, lineAfterStartingState) = parseStartingState lns (lineAfterTransition + 1)
-       hasAccepting = expect lns "% Final states" lineAfterStartingState
-       (acceptingStates, _) = parseAcceptingStates lns [] (lineAfterStartingState + 1)
+parseProgram lines =
+   let (hasInput, linesAfterExpectAlphabet) = expect lines "% Input alphabet"
+       (inputLanguage, linesAfterAlphabet) = parseInputLanguage linesAfterExpectAlphabet ""
+       (hasSpec, linesAfterExpectSpec) = expect linesAfterAlphabet "% Specification automaton"
+       (hasTransition, linesAfterExpectTransition) = expect linesAfterExpectSpec "% Transition function"
+       (transitionFunctions, linesAfterTransition) = parseTransitionFunctions linesAfterExpectTransition []
+       (hasStarting, linesAfterExpectInitial) = expect linesAfterTransition "% Initial state"
+       (startingState, linesAfterStartingState) = parseStartingState linesAfterExpectInitial
+       (hasAccepting, linesAfterExpectingAcceptingStates) = expect linesAfterStartingState "% Final states"
+       (acceptingStates, _) = parseAcceptingStates linesAfterExpectingAcceptingStates []
    in MakeProgramData { inputLanguage=inputLanguage
-                  , transitionFunctions=transitionFunctions
-                  , startingState=startingState
-                  , acceptingStates=acceptingStates}
+                      , transitionFunctions=transitionFunctions
+                      , startingState=startingState
+                      , acceptingStates=acceptingStates}
 
 
-expect :: [Line] -> String -> LineNumber -> Bool
-expect lines value lineNumber = line == value
-    where line = lines !! (lineNumber - 1)
+expect :: [Line] -> String -> (Bool, [Line])
+expect lines value = (first == value, remainingLines)
+    where first = head lines  -- TODO: head is dangerous. Crashes if empty
+          remainingLines = drop 1 lines
 
 
-parseInputLanguage :: [Line] -> InputLanguage -> LineNumber -> (InputLanguage, LineNumber)
-parseInputLanguage lines language lineNumber
-    | length line == 1 = parseInputLanguage lines (language ++ line) (lineNumber + 1)
-    | "%" `isPrefixOf` line = (language, lineNumber)
-    | otherwise = (language, lineNumber)
-    where line = lines !! (lineNumber - 1)
+parseInputLanguage :: [Line] -> InputLanguage -> (InputLanguage, [Line])
+parseInputLanguage lines language = (inputLanguage, remainingLines)
+    where inputLanguage = concat (fst split)
+          remainingLines = snd split
+          split = span isCurrentSection lines
 
 
-parseTransitionFunctions :: [Line] -> [TransitionFunction] -> LineNumber -> ([TransitionFunction], LineNumber)
-parseTransitionFunctions lines functions lineNumber
-    | length line == 5 = parseTransitionFunctions lines (functions ++ [convertLine]) (lineNumber + 1)
-    | "%" `isPrefixOf` line = (functions, lineNumber)
-    | otherwise = (functions, lineNumber)
-    where line = lines !! (lineNumber - 1)
-          convertLine = MakeTransitionFunction { from=fromState
-                                           , transition=transitionChar
-                                           , to=toState}
-          fromState = digitToInt (line !! 0)
-          transitionChar = line !! 2
-          toState = digitToInt (line !! 4)
+parseTransitionFunctions :: [Line] -> [TransitionFunction] -> ([TransitionFunction], [Line])
+parseTransitionFunctions lines functions = (transitionFunctions, remainingLines)
+    where transitionFunctions = map convertLine (fst split)
+          convertLine line = MakeTransitionFunction { from=(from line)
+                                           , transition=(transition line)
+                                           , to=(to line)}
+          from line = digitToInt (line !! 0)
+          transition line = line !! 2
+          to line = digitToInt (line !! 4)
+          remainingLines = snd split
+          split = span isCurrentSection lines
 
 
-parseStartingState :: [Line] -> LineNumber -> (State, LineNumber)
-parseStartingState lines lineNumber = (state, lineNumber + 1)
-    where line = lines !! (lineNumber - 1)
-          state = digitToInt (line !! 0)
+parseStartingState :: [Line] -> (State, [Line])
+parseStartingState lines = (state, remainingLines)
+    where state = digitToInt (head (head lines))  -- TODO: head is dangerous. Crashes if empty
+          remainingLines = drop 1 lines
 
 
-parseAcceptingStates :: [Line] -> [State] -> LineNumber -> ([State], LineNumber)
-parseAcceptingStates lines states lineNumber
-    | length line == 1 = parseAcceptingStates lines (states ++ [state]) (lineNumber + 1)
-    | "%" `isPrefixOf` line = (states, lineNumber)
-    | otherwise = (states, lineNumber)
-    where line = lines !! (lineNumber - 1)  -- TODO: throws error when empty last line
-          state = digitToInt (line !! 0)
+parseAcceptingStates :: [Line] -> [State] -> ([State], [Line])
+parseAcceptingStates lines states = (states, remainingLines)
+    where states = map toState (fst split)
+          toState line = digitToInt (head line)
+          remainingLines = snd split
+          split = span isCurrentSection lines
+
+
+isCurrentSection :: Line -> Bool
+isCurrentSection line = (not ("%" `isPrefixOf` line)) && (not (null line))
