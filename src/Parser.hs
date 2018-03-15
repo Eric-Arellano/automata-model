@@ -7,9 +7,10 @@ import Data.Maybe
 import AutomatonTypes
 
 
+-- TODO: trim trailing whitespace
+
 type Line = String
 
--- TODO: trim trailing whitespace
 
 parseProgram :: [Line] -> Maybe ProgramData
 parseProgram lines = do
@@ -23,74 +24,75 @@ parseProgram lines = do
     afterExpectingAcceptingStates <- expect afterStartingState "% Final states"
     (acceptingStates, _) <- parseAcceptingStates afterExpectingAcceptingStates
     return MakeProgramData { inputLanguage=inputLanguage
-                      , transitionFunctions=transitionFunctions
-                      , startingState=startingState
-                      , acceptingStates=acceptingStates}
+                           , transitionFunctions=transitionFunctions
+                           , startingState=startingState
+                           , acceptingStates=acceptingStates}
 
 
 expect :: [Line] -> String -> Maybe [Line]
 expect lines value
     | length lines == 0   = Nothing
-    | first == value      = Just remainingLines
+    | firstLine == value  = Just remainingLines
     | otherwise           = Nothing
   where
-    first = head lines
-    remainingLines = drop 1 lines
+    (firstLine, remainingLines) = extractFirstLine lines
 
 
 parseInputLanguage :: [Line] -> Maybe (InputLanguage, [Line])
 parseInputLanguage lines
-    | all singleChar languageLines  = Just (language, remainingLines)
-    | otherwise                     = Nothing
+    | length lines == 0               = Nothing
+    | all (lineLength 1) parsedLines  = Just (language, remainingLines)
+    | otherwise                       = Nothing
   where
-    singleChar line = length line == 1
-    language = concat languageLines
-    languageLines = fst split
-    remainingLines = snd split
-    split = span isCurrentSection lines
+    (parsedLines, remainingLines) = extractSection lines
+    language = concat parsedLines
 
 
 parseTransitionFunctions :: [Line] -> Maybe ([TransitionFunction], [Line])
 parseTransitionFunctions lines
-    | all fiveChars functionLines   = Just (functions, remainingLines)
-    | otherwise                     = Nothing
+    | length lines == 0               = Nothing
+    | all (lineLength 5) parsedLines  = Just (functions, remainingLines)
+    | otherwise                       = Nothing
   where
-    fiveChars line = length line == 5
-    functions = map parse functionLines
-    functionLines = fst split
-    parse line = MakeTransitionFunction { from=(from line)
-                                        , transition=(transition line)
-                                        , to=(to line)}
-    from line = digitToInt (line !! 0)
-    transition line = line !! 2
-    to line = digitToInt (line !! 4)
-    remainingLines = snd split
-    split = span isCurrentSection lines
+    (parsedLines, remainingLines) = extractSection lines
+    functions = map parse parsedLines
+    parse line = MakeTransitionFunction { from=(parseFrom line)
+                                        , transition=(parseTransition line)
+                                        , to=(parseTo line)}
+    parseFrom line = digitToInt (line !! 0)
+    parseTransition line = line !! 2
+    parseTo line = digitToInt (line !! 4)
 
 
 parseStartingState :: [Line] -> Maybe (State, [Line])
 parseStartingState lines
-    | length lines == 0   = Nothing
-    | length first == 1   = Just (state, remainingLines)
-    | otherwise           = Nothing
+    | length lines == 0       = Nothing
+    | length firstLine == 1   = Just (state, remainingLines)
+    | otherwise               = Nothing
   where
-    state = digitToInt (head first)
-    first = head lines
-    remainingLines = drop 1 lines
+    (firstLine, remainingLines) = extractFirstLine lines
+    state = digitToInt (head firstLine)
 
 
 parseAcceptingStates :: [Line] -> Maybe ([State], [Line])
 parseAcceptingStates lines
-    | all singleChar stateLines   = Just (states, remainingLines)
-    | otherwise                   = Nothing
+    | length lines == 0               = Nothing
+    | all (lineLength 1) parsedLines  = Just (states, remainingLines)
+    | otherwise                       = Nothing
   where
-    singleChar line = length line == 1
-    states = map toState stateLines
-    stateLines = fst split
-    toState line = digitToInt (head line)
-    remainingLines = snd split
-    split = span isCurrentSection lines
+    (parsedLines, remainingLines) = extractSection lines
+    states = map parse parsedLines
+    parse line = digitToInt (head line)
 
 
 isCurrentSection :: Line -> Bool
 isCurrentSection line = not ("%" `isPrefixOf` line || null line)
+
+lineLength :: Int -> Line -> Bool
+lineLength numChars line = length line == numChars
+
+extractFirstLine :: [Line] -> (Line, [Line])
+extractFirstLine lines = (head lines, drop 1 lines)
+
+extractSection :: [Line] -> ([Line], [Line])
+extractSection = span isCurrentSection
