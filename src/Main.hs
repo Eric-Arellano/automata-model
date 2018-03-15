@@ -3,32 +3,12 @@ import Data.List
 import Data.Char
 
 -- TODO: refactor to not use !!. How can this be made more idiomatic?
--- TODO: refactor to use parse function
 
 main :: IO ()
 main = do
   contents <- readFile "hello.txt"
   let lns = lines contents
-
-  let hasInput = expect lns "% Input alphabet" 1
-  let (inputLanguage, lineAfterAlphabet) = parseInputLanguage lns "" 2
-
-  let hasSpec = expect lns "% Specification automaton" lineAfterAlphabet
-
-  let hasTransition = expect lns "% Transition function" (lineAfterAlphabet + 1)
-  let (transitionFunctions, lineAfterTransition) = parseTransitionFunctions lns [] (lineAfterAlphabet + 2)
-
-  let hasStarting = expect lns "% Initial state" lineAfterTransition
-  let (startingState, lineAfterStartingState) = parseStartingState lns (lineAfterTransition + 1)
-
-  let hasAccepting = expect lns "% Final states" lineAfterStartingState
-  let (acceptingStates, _) = parseAcceptingStates lns [] (lineAfterStartingState + 1)
-
-  let programData = ProgramData { inputLanguage=inputLanguage,
-                                  transitionFunctions=transitionFunctions,
-                                  startingState=startingState,
-                                  acceptingStates=acceptingStates}
-
+  let programData = parseProgram lns
   print programData
 
 
@@ -45,6 +25,23 @@ data ProgramData = ProgramData { inputLanguage :: InputLanguage,
                                  transitionFunctions :: [TransitionFunction],
                                  startingState :: State,
                                  acceptingStates :: [State] } deriving (Show)
+
+-- TODO: return Maybe ProgramData type, and check that everything is valid
+parseProgram :: [Line] -> ProgramData
+parseProgram lns =
+   let hasInput = expect lns "% Input alphabet" 1
+       (inputLanguage, lineAfterAlphabet) = parseInputLanguage lns "" 2
+       hasSpec = expect lns "% Specification automaton" lineAfterAlphabet
+       hasTransition = expect lns "% Transition function" (lineAfterAlphabet + 1)
+       (transitionFunctions, lineAfterTransition) = parseTransitionFunctions lns [] (lineAfterAlphabet + 2)
+       hasStarting = expect lns "% Initial state" lineAfterTransition
+       (startingState, lineAfterStartingState) = parseStartingState lns (lineAfterTransition + 1)
+       hasAccepting = expect lns "% Final states" lineAfterStartingState
+       (acceptingStates, _) = parseAcceptingStates lns [] (lineAfterStartingState + 1)
+   in ProgramData { inputLanguage=inputLanguage,
+                                   transitionFunctions=transitionFunctions,
+                                   startingState=startingState,
+                                   acceptingStates=acceptingStates}
 
 
 expect :: [Line] -> String -> LineNumber -> Bool
