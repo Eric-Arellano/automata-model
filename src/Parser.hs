@@ -1,9 +1,8 @@
 module Parser (parseProgram) where
 
-import Data.List
-import Data.Char
-import Data.Maybe
-import qualified Data.Text as Text
+import qualified Data.List  as List
+import qualified Data.Char  as Char
+import qualified Data.Text  as Text
 
 import AutomatonTypes
 
@@ -30,59 +29,49 @@ parseProgram lines = do
 
 
 expect :: [Line] -> String -> Maybe [Line]
-expect lines value
-    | length lines == 0   = Nothing
-    | firstLine == value  = Just remainingLines
-    | otherwise           = Nothing
+expect lines value = wrap lines isValid remainingLines
   where
     (firstLine, remainingLines) = extractFirstLine lines
+    isValid = firstLine == value
 
 
 parseInputLanguage :: [Line] -> Maybe (InputLanguage, [Line])
-parseInputLanguage lines
-    | length lines == 0               = Nothing
-    | all (lineLength 1) parsedLines  = Just (language, remainingLines)
-    | otherwise                       = Nothing
+parseInputLanguage lines = wrap lines isValid (language, remainingLines)
   where
     (parsedLines, remainingLines) = extractSection lines
+    isValid = all (lineLength 1) parsedLines
     language = concat parsedLines
 
 
 parseTransitionFunctions :: [Line] -> Maybe ([TransitionFunction], [Line])
-parseTransitionFunctions lines
-    | length lines == 0               = Nothing
-    | all (lineLength 5) parsedLines  = Just (functions, remainingLines)
-    | otherwise                       = Nothing
+parseTransitionFunctions lines = wrap lines isValid (functions, remainingLines)
   where
     (parsedLines, remainingLines) = extractSection lines
+    isValid = all (lineLength 5) parsedLines
     functions = map parse parsedLines
     parse line = MakeTransitionFunction { from=(parseFrom line)
                                         , transition=(parseTransition line)
                                         , to=(parseTo line)}
-    parseFrom line = digitToInt (line !! 0)
+    parseFrom line = Char.digitToInt (line !! 0)
     parseTransition line = line !! 2
-    parseTo line = digitToInt (line !! 4)
+    parseTo line = Char.digitToInt (line !! 4)
 
 
 parseStartingState :: [Line] -> Maybe (State, [Line])
-parseStartingState lines
-    | length lines == 0       = Nothing
-    | length firstLine == 1   = Just (state, remainingLines)
-    | otherwise               = Nothing
+parseStartingState lines = wrap lines isValid (state, remainingLines)
   where
     (firstLine, remainingLines) = extractFirstLine lines
-    state = digitToInt (head firstLine)
+    isValid = length firstLine == 1
+    state = Char.digitToInt (head firstLine)
 
 
 parseAcceptingStates :: [Line] -> Maybe ([State], [Line])
-parseAcceptingStates lines
-    | length lines == 0               = Nothing
-    | all (lineLength 1) parsedLines  = Just (states, remainingLines)
-    | otherwise                       = Nothing
+parseAcceptingStates lines = wrap lines isValid (states, remainingLines)
   where
     (parsedLines, remainingLines) = extractSection lines
+    isValid = all (lineLength 1) parsedLines
     states = map parse parsedLines
-    parse line = digitToInt (head line)
+    parse line = Char.digitToInt (head line)
 
 
 stripWhiteSpace :: [Line] -> [Line]
@@ -97,5 +86,11 @@ extractFirstLine lines = (head lines, drop 1 lines)
 extractSection :: [Line] -> ([Line], [Line])
 extractSection = span isCurrentSection
 
+wrap :: [Line] -> Bool -> success -> Maybe success
+wrap lines isValid success
+  | length lines == 0   = Nothing
+  | isValid             = Just success
+  | otherwise           = Nothing
+
 isCurrentSection :: Line -> Bool
-isCurrentSection line = not ("%" `isPrefixOf` line || null line)
+isCurrentSection line = not ("%" `List.isPrefixOf` line || null line)

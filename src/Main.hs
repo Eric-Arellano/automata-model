@@ -1,8 +1,8 @@
 module Main where
 
-import Parser
+import qualified Parser
 
 main :: IO ()
 main = do
   contents <- readFile "input.txt"
-  print . parseProgram $ (lines contents)
+  print . Parser.parseProgram $ (lines contents)
