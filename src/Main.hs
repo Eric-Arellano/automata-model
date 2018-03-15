@@ -4,7 +4,6 @@ import Parser
 
 main :: IO ()
 main = do
-  contents <- readFile "hello.txt"
-  let lns = lines contents
-  let programData = parseProgram lns
+  contents <- readFile "input.txt"
+  let programData = parseProgram (lines contents)
   print programData
