@@ -5,10 +5,10 @@ version:             0.1.0.0
 homepage:            https://github.com/githubuser/automata-model#readme
 license:             BSD3
 license-file:        LICENSE
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2018 Author name here
-category:            Web
+author:              Eric Arellano
+maintainer:          ecarell1@asu.edu
+copyright:           2018 Eric Arellano
+category:            Desktop
 build-type:          Simple
 cabal-version:       >=1.10
 extra-source-files:  README.md
