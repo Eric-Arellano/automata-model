@@ -13,14 +13,14 @@ type Line = String
 parseProgram :: [Line] -> ProgramData
 parseProgram lines =
    let (hasInput, linesAfterExpectAlphabet) = expect lines "% Input alphabet"
-       (inputLanguage, linesAfterAlphabet) = parseInputLanguage linesAfterExpectAlphabet ""
+       (inputLanguage, linesAfterAlphabet) = parseInputLanguage linesAfterExpectAlphabet
        (hasSpec, linesAfterExpectSpec) = expect linesAfterAlphabet "% Specification automaton"
        (hasTransition, linesAfterExpectTransition) = expect linesAfterExpectSpec "% Transition function"
-       (transitionFunctions, linesAfterTransition) = parseTransitionFunctions linesAfterExpectTransition []
+       (transitionFunctions, linesAfterTransition) = parseTransitionFunctions linesAfterExpectTransition
        (hasStarting, linesAfterExpectInitial) = expect linesAfterTransition "% Initial state"
        (startingState, linesAfterStartingState) = parseStartingState linesAfterExpectInitial
        (hasAccepting, linesAfterExpectingAcceptingStates) = expect linesAfterStartingState "% Final states"
-       (acceptingStates, _) = parseAcceptingStates linesAfterExpectingAcceptingStates []
+       (acceptingStates, _) = parseAcceptingStates linesAfterExpectingAcceptingStates
    in MakeProgramData { inputLanguage=inputLanguage
                       , transitionFunctions=transitionFunctions
                       , startingState=startingState
@@ -33,15 +33,15 @@ expect lines value = (first == value, remainingLines)
           remainingLines = drop 1 lines
 
 
-parseInputLanguage :: [Line] -> InputLanguage -> (InputLanguage, [Line])
-parseInputLanguage lines language = (inputLanguage, remainingLines)
+parseInputLanguage :: [Line] -> (InputLanguage, [Line])
+parseInputLanguage lines = (inputLanguage, remainingLines)
     where inputLanguage = concat (fst split)
           remainingLines = snd split
           split = span isCurrentSection lines
 
 
-parseTransitionFunctions :: [Line] -> [TransitionFunction] -> ([TransitionFunction], [Line])
-parseTransitionFunctions lines functions = (transitionFunctions, remainingLines)
+parseTransitionFunctions :: [Line] -> ([TransitionFunction], [Line])
+parseTransitionFunctions lines = (transitionFunctions, remainingLines)
     where transitionFunctions = map convertLine (fst split)
           convertLine line = MakeTransitionFunction { from=(from line)
                                            , transition=(transition line)
@@ -59,8 +59,8 @@ parseStartingState lines = (state, remainingLines)
           remainingLines = drop 1 lines
 
 
-parseAcceptingStates :: [Line] -> [State] -> ([State], [Line])
-parseAcceptingStates lines states = (states, remainingLines)
+parseAcceptingStates :: [Line] -> ([State], [Line])
+parseAcceptingStates lines = (states, remainingLines)
     where states = map toState (fst split)
           toState line = digitToInt (head line)
           remainingLines = snd split
