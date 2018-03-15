@@ -3,18 +3,18 @@ module Parser (parseProgram) where
 import Data.List
 import Data.Char
 import Data.Maybe
+import qualified Data.Text as Text
 
 import AutomatonTypes
 
-
--- TODO: trim trailing whitespace
 
 type Line = String
 
 
 parseProgram :: [Line] -> Maybe ProgramData
 parseProgram lines = do
-    afterExpectAlphabet <- expect lines "% Input alphabet"
+    let trimmed = stripWhiteSpace lines
+    afterExpectAlphabet <- expect trimmed "% Input alphabet"
     (inputLanguage, afterAlphabet) <- parseInputLanguage afterExpectAlphabet
     afterExpectSpec <- expect afterAlphabet "% Specification automaton"
     afterExpectTransition <- expect afterExpectSpec "% Transition function"
@@ -85,8 +85,8 @@ parseAcceptingStates lines
     parse line = digitToInt (head line)
 
 
-isCurrentSection :: Line -> Bool
-isCurrentSection line = not ("%" `isPrefixOf` line || null line)
+stripWhiteSpace :: [Line] -> [Line]
+stripWhiteSpace =  map (Text.unpack . Text.strip . Text.pack)
 
 lineLength :: Int -> Line -> Bool
 lineLength numChars line = length line == numChars
@@ -96,3 +96,6 @@ extractFirstLine lines = (head lines, drop 1 lines)
 
 extractSection :: [Line] -> ([Line], [Line])
 extractSection = span isCurrentSection
+
+isCurrentSection :: Line -> Bool
+isCurrentSection line = not ("%" `isPrefixOf` line || null line)
