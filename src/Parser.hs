@@ -12,15 +12,15 @@ type Line = String
 
 parseProgram :: [Line] -> ProgramData
 parseProgram lines =
-   let (hasInput, linesAfterExpectAlphabet) = expect lines "% Input alphabet"
-       (inputLanguage, linesAfterAlphabet) = parseInputLanguage linesAfterExpectAlphabet
-       (hasSpec, linesAfterExpectSpec) = expect linesAfterAlphabet "% Specification automaton"
-       (hasTransition, linesAfterExpectTransition) = expect linesAfterExpectSpec "% Transition function"
-       (transitionFunctions, linesAfterTransition) = parseTransitionFunctions linesAfterExpectTransition
-       (hasStarting, linesAfterExpectInitial) = expect linesAfterTransition "% Initial state"
-       (startingState, linesAfterStartingState) = parseStartingState linesAfterExpectInitial
-       (hasAccepting, linesAfterExpectingAcceptingStates) = expect linesAfterStartingState "% Final states"
-       (acceptingStates, _) = parseAcceptingStates linesAfterExpectingAcceptingStates
+   let (hasInput, afterExpectAlphabet) = expect lines "% Input alphabet"
+       (inputLanguage, afterAlphabet) = parseInputLanguage afterExpectAlphabet
+       (hasSpec, afterExpectSpec) = expect afterAlphabet "% Specification automaton"
+       (hasTransition, afterExpectTransition) = expect afterExpectSpec "% Transition function"
+       (transitionFunctions, afterTransition) = parseTransitionFunctions afterExpectTransition
+       (hasStarting, afterExpectInitial) = expect afterTransition "% Initial state"
+       (startingState, afterStartingState) = parseStartingState afterExpectInitial
+       (hasAccepting, afterExpectingAcceptingStates) = expect afterStartingState "% Final states"
+       (acceptingStates, _) = parseAcceptingStates afterExpectingAcceptingStates
    in MakeProgramData { inputLanguage=inputLanguage
                       , transitionFunctions=transitionFunctions
                       , startingState=startingState
@@ -68,4 +68,4 @@ parseAcceptingStates lines = (states, remainingLines)
 
 
 isCurrentSection :: Line -> Bool
-isCurrentSection line = (not ("%" `isPrefixOf` line)) && (not (null line))
+isCurrentSection line = not ("%" `isPrefixOf` line || null line)
