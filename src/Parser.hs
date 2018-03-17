@@ -163,7 +163,9 @@ initStates input = map newState uniqueIDs
                                 , FA.isAccepting = False
                                 , FA.transitions = []}
     uniqueIDs :: [StateID]
-    uniqueIDs = List.nub . map fromState . transitions $ input
+    uniqueIDs = List.nub (getIDs fromState ++ getIDs toState)
+    getIDs :: (Transition -> StateID) -> [StateID]
+    getIDs target = map target . transitions $ input
 
 
 addTransitions :: [Transition] -> [FA.State] -> [FA.State]
