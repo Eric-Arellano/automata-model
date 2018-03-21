@@ -183,8 +183,9 @@ convertTransitions :: [FA.State] -> [Transition] -> [FA.Transition]
 convertTransitions states = map convert
   where
     convert :: Transition -> FA.Transition
-    convert transition = FA.Transition { FA.inputLetter = (letter transition)
-                                        , FA.toState = getState (toState transition) }
+    convert transition = FA.Transition { FA.fromState = getState (fromState transition)
+                                       , FA.inputLetter = (letter transition)
+                                       , FA.toState = getState (toState transition) }
     getState :: StateID -> FA.State
     getState stateID = Maybe.fromJust (List.find (\state -> (FA.number state) == stateID) states)
 
