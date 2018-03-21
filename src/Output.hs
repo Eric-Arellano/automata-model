@@ -5,8 +5,8 @@ import qualified FiniteAutomata as FA
 
 automaton :: FA.Automaton -> [String]
 automaton automaton =  alphabet automaton
---                  ++ transitionFunctions automaton
                     ++ ["% Specification automaton"]
+                    ++ transitions automaton
                     ++ initialState automaton
                     ++ finalStates automaton
 
@@ -16,8 +16,17 @@ alphabet automaton = ["% Input alphabet"] ++ getAlphabet
    getAlphabet :: [String]
    getAlphabet = map (\l -> [l]) (FA.alphabet automaton)
 
-transitionFunctions :: FA.Automaton -> [String]
-transitionFunctions automaton = undefined
+transitions :: FA.Automaton -> [String]
+transitions automaton = ["% Transition function"] ++ map outputTransition allTransitions
+  where
+    outputTransition :: FA.Transition -> String
+    outputTransition transition = show (FA.number (FA.fromState transition))
+                                ++ " "
+                                ++ [FA.inputLetter transition]
+                                ++ " "
+                                ++ show (FA.number (FA.toState transition))
+    allTransitions :: [FA.Transition]
+    allTransitions = foldl (++) [] . map FA.transitions $ FA.states automaton
 
 initialState :: FA.Automaton -> [String]
 initialState automaton = ["% Initial state", getInitialStateID]
