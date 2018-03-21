@@ -3,6 +3,9 @@ module FiniteAutomata
   , StateID
   , State(..)
   , Transition(..)
+  , getInitialState
+  , getAcceptingStates
+  , getTransitions
   , toDFA
   , isNFA
   , isDFA
