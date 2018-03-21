@@ -2,7 +2,6 @@ module FiniteAutomata
   ( Automaton(..)
   , State(..)
   , Transition(..)
-  , output
   , toDFA
   , isNFA
   , isDFA
@@ -175,40 +174,3 @@ complement dfa = dfa { states = map invertAccept (states dfa) }
 
 intersection :: DFA -> DFA -> DFA
 intersection = undefined
-
-
--- -------------------------------------------------------------------
--- Output
--- -------------------------------------------------------------------
-
-output :: Automaton -> String
-output automaton = removeSlash ("Automaton " ++ outputAlphabet ++ outputStates)
-  where
-    removeSlash :: String -> String
-    removeSlash = filter (\x -> not (x `List.elem` "\"\\"))
-    outputAlphabet :: String
-    outputAlphabet = show ("Alphabet = " ++ alphabet automaton) ++ ", "
-    outputStates :: String
-    outputStates = (show "states = [") ++ (foldl (++) "" condensedStates) ++ (show "]")
-    condensedStates :: [String]
-    condensedStates = map condense (states automaton)
-    condense :: State -> String
-    condense state = show "State {id = "
-                     ++ show (number state)
-                     ++ show ", isInitial = "
-                     ++ show (isInitial state)
-                     ++ show ", isAccepting = "
-                     ++ show (isAccepting state)
-                     ++ show ", transitions = ["
-                     ++ outputTransitions (transitions state)
-                     ++ show "]}"
-    outputTransitions :: [Transition] -> String
-    outputTransitions trans = foldl (++) "" (map condenseTransition trans)
-    condenseTransition :: Transition -> String
-    condenseTransition transition = show "Transition = {fromState = "
-                                    ++ show (number (fromState transition))
-                                    ++ show ", inputLetter = "
-                                    ++ show (inputLetter transition)
-                                    ++ show ", toState = "
-                                    ++ show (number (toState transition))
-                                    ++ show "} "
