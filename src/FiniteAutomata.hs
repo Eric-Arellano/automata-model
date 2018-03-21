@@ -1,5 +1,6 @@
 module FiniteAutomata
   ( Automaton(..)
+  , StateID
   , State(..)
   , Transition(..)
   , toDFA
@@ -32,6 +33,20 @@ data Transition = Transition { fromState :: State
                              } deriving (Show, Eq)
 
 type DFA = Automaton
+
+
+-- -------------------------------------------------------------------
+-- Getters
+-- -------------------------------------------------------------------
+
+getInitialState :: [State] -> State
+getInitialState = head . filter (\state -> isAccepting state == True)
+
+getAcceptingStates :: [State] -> [State]
+getAcceptingStates = filter (\state -> isAccepting state == True)
+
+getTransitions :: [State] -> [Transition]
+getTransitions = foldl (++) [] . map transitions
 
 
 -- -------------------------------------------------------------------
@@ -99,12 +114,12 @@ initConvStates = map initState . powerset . map number
 
 
 addInitialState :: [State] -> [ConvState] -> [ConvState]
-addInitialState states = map (\convState -> if ((convID convState) == initialState)
+addInitialState states = map (\convState -> if ((convID convState) == initialStateID)
                                             then convState { convIsInitial = True }
                                             else convState)
   where
-    initialState :: [StateID]
-    initialState = map number . filter (\state -> isInitial state == True) $ states
+    initialStateID :: [StateID]
+    initialStateID = map number [getInitialState states]
 
 
 addAcceptingStates :: [State] -> [ConvState] -> [ConvState]
@@ -113,9 +128,9 @@ addAcceptingStates states = map (\convState -> if not . null . acceptingIntersec
                                                else convState)
   where
     acceptingIntersection :: ConvState -> [StateID]
-    acceptingIntersection convState = (convID convState) `List.intersect` acceptingStates
-    acceptingStates :: [StateID]
-    acceptingStates = map number . filter (\state -> isAccepting state == True) $ states
+    acceptingIntersection convState = (convID convState) `List.intersect` acceptingStateIDs
+    acceptingStateIDs :: [StateID]
+    acceptingStateIDs = map number (getAcceptingStates states)
 
 
 addTransitionFunctions :: Alphabet -> [State] -> [ConvState] -> [ConvState]
@@ -130,9 +145,7 @@ addTransitionFunctions alphabet states = map addToState
     allTransitionsForLetterAndState :: Char -> ConvState -> [Transition]
     allTransitionsForLetterAndState char convState = filter (\transition -> number (fromState transition) `elem` (convID convState)) (allTransitionsForLetter char)
     allTransitionsForLetter :: Char -> [Transition]
-    allTransitionsForLetter char = filter (\transition ->  (inputLetter transition) == char) allTransitions
-    allTransitions :: [Transition]
-    allTransitions = foldl (++) [] . map transitions $ states
+    allTransitionsForLetter char = filter (\transition ->  (inputLetter transition) == char) (getTransitions states)
 
 removeUselessStates :: [ConvState] -> [ConvState]
 removeUselessStates convStates = filter (\cs -> convIsInitial cs || isReachable cs) convStates
