@@ -1,4 +1,4 @@
-module ShortestString (shortest) where
+module ShortestString (shortest, experiment) where
 
 -- BFS algorithm adapted from https://lettier.github.io/posts/2016-04-29-breadth-first-search-in-haskell.html
 
@@ -12,6 +12,10 @@ shortest automaton = accompanyingString automaton
                    . shortestAcceptingVertex
                    . addDistances (initialVertex automaton)
                    . toGraph $ automaton
+
+experiment :: FA.Automaton -> Graph
+experiment automaton = addDistances (initialVertex automaton)
+                     . toGraph $ automaton
 
 -- -------------------------------------------------
 -- Graph data structure
@@ -33,6 +37,8 @@ toVertex :: FA.State -> Vertex
 toVertex state = Vertex { stateID = FA.number state
                         , neighbors = map FA.number . map FA.toState $ FA.transitions state
                         , isAccepting = FA.isAccepting state
+                        , distance = 0
+                        , parent = -1
                         }
 
 initialVertex :: FA.Automaton -> Vertex
@@ -43,7 +49,60 @@ initialVertex = toVertex . FA.getInitialState . FA.states
 -- -------------------------------------------------
 
 addDistances :: Vertex -> Graph -> Graph
-addDistances = undefined
+addDistances startVertex inGraph = bfs inGraph outGraph queue seen
+  where
+    queue = [startVertex]
+    outGraph = Graph queue
+    seen = queue
+
+--     In       Out      Queue       Seen        Out
+bfs :: Graph -> Graph -> [Vertex] -> [Vertex] -> Graph
+bfs (Graph []) _ _ _ = Graph []  -- Empty graph -> output empty graph
+bfs _ outGraph [] _ = outGraph  -- empty queue -> output graph
+bfs inGraph (Graph (outStart:outEnd)) (current:remainingQueue) (g:h) = bfs inGraph outGraph updatedQueue updatedSeenAlready
+  where
+    currentID :: FA.StateID
+    currentID = stateID current
+    currentNeighborsIDs :: [FA.StateID]
+    currentNeighborsIDs = neighbors current
+    currentNeighborsVertexes :: [Vertex]
+    currentNeighborsVertexes = getVertexesForIDs inGraph currentNeighborsIDs
+    updatedDistance :: Int
+    updatedDistance = distance current + 1
+    seenAlready :: [Vertex]  -- already processed by bfs
+    seenAlready = g : h
+    -- Remove all neighbors, to the current vertex, that have
+    -- been queued up before.
+    neighborsNotAlreadySeen = filterNeighbors seenAlready currentNeighborsVertexes
+    -- Update the predecessor label and distance for each current vertex neighbor.
+    enqueue :: [Vertex]
+    enqueue = updateDistanceParent neighborsNotAlreadySeen updatedDistance currentID
+    -- Update our breadth-first search tree/graph.
+    outGraph :: Graph
+    outGraph = Graph $ (outStart:outEnd) ++ enqueue
+    updatedQueue :: [Vertex]
+    updatedQueue = remainingQueue ++ enqueue
+    updatedSeenAlready :: [Vertex]
+    updatedSeenAlready = seenAlready ++ enqueue
+
+getVertexesForIDs :: Graph -> [FA.StateID] -> [Vertex]
+getVertexesForIDs (Graph []) _ = []  -- empty graph
+getVertexesForIDs (Graph (x:y)) [] = x : y
+getVertexesForIDs (Graph (x:y)) ids = filter (\vertex -> stateID vertex `elem` ids) (x:y)
+
+vertexInVertexes :: Vertex -> [Vertex] -> Bool
+vertexInVertexes _ [] = False
+vertexInVertexes Vertex {stateID = stateID'} (x:y) = foldl (\ acc x -> stateID x == stateID' || acc) False (x:y)
+
+filterNeighbors :: [Vertex] -> [Vertex] -> [Vertex]
+filterNeighbors _ [] = []
+filterNeighbors [] _ = []
+filterNeighbors seen vertexNeighbors = filter (\vertex -> not $ vertexInVertexes vertex seen) vertexNeighbors
+
+updateDistanceParent :: [Vertex] -> Int -> FA.StateID -> [Vertex]
+updateDistanceParent [] _ _ = []
+updateDistanceParent (x:y) distance parentID = map (\ (Vertex stateID' neighbors' _ _ isAccepting') ->
+                                                    Vertex stateID' neighbors' distance parentID isAccepting') (x:y)
 
 -- -------------------------------------------------
 -- Shortest path
