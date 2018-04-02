@@ -34,8 +34,8 @@ toGraph :: FA.Automaton -> Graph
 toGraph automaton = Graph (map toVertex (FA.states automaton))
 
 toVertex :: FA.State -> Vertex
-toVertex state = Vertex { stateID = FA.number state
-                        , neighbors = map FA.number . map FA.toState $ FA.transitions state
+toVertex state = Vertex { stateID = FA.stateID state
+                        , neighbors = map FA.stateID . map FA.toState $ FA.transitions state
                         , isAccepting = FA.isAccepting state
                         , distance = 0
                         , parent = -1

@@ -12,9 +12,10 @@ main :: IO ()
 main = do
   contents <- readFile "input2.txt"
   let automaton = Maybe.fromJust . Parser.parseProgram $ (lines contents)
-  let complement = FiniteAutomata.complement automaton
-  print . ShortestString.experiment $ automaton
---  writeFile "output.txt"
---        . unlines
---        . Output.automaton
---        $ (complement)
+  let dfa = FiniteAutomata.toDFA automaton
+--  let complement = FiniteAutomata.complement automaton
+--  print . ShortestString.experiment $ automaton
+  writeFile "output.txt"
+        . unlines
+        . Output.automaton
+        $ (dfa)

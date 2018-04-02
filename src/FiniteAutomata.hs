@@ -24,7 +24,7 @@ data Automaton = Automaton { alphabet :: Alphabet
 type Alphabet = [Char]
 
 type StateID = Int
-data State = State { number :: StateID
+data State = State { stateID :: StateID
                    , isInitial :: Bool
                    , isAccepting :: Bool
                    , transitions :: [Transition]
@@ -105,7 +105,7 @@ toDFA automaton
 
 
 initConvStates :: [State] -> [ConvState]
-initConvStates = map initState . powerset . map number
+initConvStates = map initState . powerset . map stateID
   where
     initState :: [StateID] -> ConvState
     initState stateIDs = ConvState { convID = stateIDs
@@ -122,7 +122,7 @@ addInitialState states = map (\convState -> if ((convID convState) == initialSta
                                             else convState)
   where
     initialStateID :: [StateID]
-    initialStateID = map number [getInitialState states]
+    initialStateID = map stateID [getInitialState states]
 
 
 addAcceptingStates :: [State] -> [ConvState] -> [ConvState]
@@ -133,7 +133,7 @@ addAcceptingStates states = map (\convState -> if not . null . acceptingIntersec
     acceptingIntersection :: ConvState -> [StateID]
     acceptingIntersection convState = (convID convState) `List.intersect` acceptingStateIDs
     acceptingStateIDs :: [StateID]
-    acceptingStateIDs = map number (getAcceptingStates states)
+    acceptingStateIDs = map stateID (getAcceptingStates states)
 
 
 addTransitionFunctions :: Alphabet -> [State] -> [ConvState] -> [ConvState]
@@ -146,7 +146,8 @@ addTransitionFunctions alphabet states = map addToState
     convertForLetterAndState :: ConvState -> Char -> [ConvTransition]
     convertForLetterAndState convState char = undefined
     allTransitionsForLetterAndState :: Char -> ConvState -> [Transition]
-    allTransitionsForLetterAndState char convState = filter (\transition -> number (fromState transition) `elem` (convID convState)) (allTransitionsForLetter char)
+    allTransitionsForLetterAndState char convState = filter (\transition -> [stateID (fromState transition)] == (convID convState))
+                                                            (allTransitionsForLetter char)
     allTransitionsForLetter :: Char -> [Transition]
     allTransitionsForLetter char = filter (\transition ->  (inputLetter transition) == char) (getTransitions states)
 
@@ -165,7 +166,7 @@ convertBackStates :: [ConvState] -> [State]
 convertBackStates = map convertState
   where
     convertState :: ConvState -> State
-    convertState convState = State { number = flattenID (convID convState)
+    convertState convState = State { stateID = flattenID (convID convState)
                                    , isInitial = convIsInitial convState
                                    , isAccepting = convIsAccepting convState
                                    , transitions = map convertTransition (convTransitions convState) }

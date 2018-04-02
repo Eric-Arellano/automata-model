@@ -158,7 +158,7 @@ initStates :: InputData -> [FA.State]
 initStates input = map newState uniqueIDs
   where
     newState :: StateID -> FA.State
-    newState stateID = FA.State { FA.number = stateID
+    newState stateID = FA.State { FA.stateID = stateID
                                 , FA.isInitial = False
                                 , FA.isAccepting = False
                                 , FA.transitions = []}
@@ -172,7 +172,7 @@ addTransitions :: [Transition] -> [FA.State] -> [FA.State]
 addTransitions transitions states = map add states
   where
     add :: FA.State -> FA.State
-    add state = state { FA.transitions = findAll (FA.number state)}
+    add state = state { FA.transitions = findAll (FA.stateID state)}
     findAll :: StateID -> [FA.Transition]
     findAll stateID = (convertTransitions states) . filter (matchingIDs stateID) $ transitions
     matchingIDs :: StateID -> Transition -> Bool
@@ -187,16 +187,16 @@ convertTransitions states = map convert
                                        , FA.inputLetter = (letter transition)
                                        , FA.toState = getState (toState transition) }
     getState :: StateID -> FA.State
-    getState stateID = Maybe.fromJust (List.find (\state -> (FA.number state) == stateID) states)
+    getState stateID = Maybe.fromJust (List.find (\state -> (FA.stateID state) == stateID) states)
 
 
 addInitial :: StateID -> [FA.State] -> [FA.State]
-addInitial stateID = map (\state -> if ((FA.number state) == stateID)
+addInitial stateID = map (\state -> if ((FA.stateID state) == stateID)
                                     then state { FA.isInitial = True }
                                     else state)
 
 
 addAccepting :: [StateID] -> [FA.State] -> [FA.State]
-addAccepting stateIDs = map (\state -> if ((FA.number state) `elem` stateIDs)
-                                     then state { FA.isAccepting = True }
-                                     else state)
+addAccepting stateIDs = map (\state -> if ((FA.stateID state) `elem` stateIDs)
+                                       then state { FA.isAccepting = True }
+                                       else state)

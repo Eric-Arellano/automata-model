@@ -20,11 +20,11 @@ transitions :: FA.Automaton -> [String]
 transitions automaton = ["% Transition function"] ++ map outputTransition allTransitions
   where
     outputTransition :: FA.Transition -> String
-    outputTransition transition = show (FA.number (FA.fromState transition))
+    outputTransition transition = show (FA.stateID (FA.fromState transition))
                                 ++ " "
                                 ++ [FA.inputLetter transition]
                                 ++ " "
-                                ++ show (FA.number (FA.toState transition))
+                                ++ show (FA.stateID (FA.toState transition))
     allTransitions :: [FA.Transition]
     allTransitions = foldl (++) [] . map FA.transitions $ FA.states automaton
 
@@ -32,7 +32,7 @@ initialState :: FA.Automaton -> [String]
 initialState automaton = ["% Initial state", getInitialStateID]
   where
     getInitialStateID :: String
-    getInitialStateID = show (FA.number getInitialState)
+    getInitialStateID = show (FA.stateID getInitialState)
     getInitialState :: FA.State
     getInitialState = head . filter (FA.isInitial) $ FA.states automaton
 
@@ -40,6 +40,6 @@ finalStates :: FA.Automaton -> [String]
 finalStates automaton = ["% Final states"] ++ getFinalStateIDs
   where
     getFinalStateIDs :: [String]
-    getFinalStateIDs = map show . map FA.number $ getFinalStates
+    getFinalStateIDs = map show . map FA.stateID $ getFinalStates
     getFinalStates :: [FA.State]
     getFinalStates = filter (FA.isAccepting) (FA.states automaton)
