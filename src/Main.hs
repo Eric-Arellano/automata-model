@@ -10,7 +10,7 @@ import qualified ShortestString
 
 main :: IO ()
 main = do
-  contents <- readFile "input2.txt"
+  contents <- readFile "toDFA_simple.txt"
   let automaton = Maybe.fromJust . Parser.parseProgram $ (lines contents)
   let dfa = FiniteAutomata.toDFA automaton
 --  let complement = FiniteAutomata.complement automaton

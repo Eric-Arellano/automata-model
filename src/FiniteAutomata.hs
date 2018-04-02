@@ -43,7 +43,7 @@ type DFA = Automaton
 -- -------------------------------------------------------------------
 
 getInitialState :: [State] -> State
-getInitialState = head . filter (\state -> isAccepting state == True)
+getInitialState = head . filter (\state -> isInitial state == True)
 
 getAcceptingStates :: [State] -> [State]
 getAcceptingStates = filter (\state -> isAccepting state == True)
@@ -122,7 +122,7 @@ addInitialState states = map (\convState -> if ((convID convState) == initialSta
                                             else convState)
   where
     initialStateID :: [StateID]
-    initialStateID = map stateID [getInitialState states]
+    initialStateID = [stateID $ getInitialState states]
 
 
 addAcceptingStates :: [State] -> [ConvState] -> [ConvState]
@@ -139,14 +139,18 @@ addAcceptingStates states = map (\convState -> if not . null . acceptingIntersec
 addTransitionFunctions :: Alphabet -> [State] -> [ConvState] -> [ConvState]
 addTransitionFunctions alphabet states = map addToState
   where
+    -- TODO: actually implement properly...
     addToState :: ConvState -> ConvState
     addToState convState = convState { convTransitions = convertForState convState }
     convertForState :: ConvState -> [ConvTransition]
-    convertForState convState = undefined
+    convertForState convState = concat $ map (convertForLetterAndState convState) alphabet
     convertForLetterAndState :: ConvState -> Char -> [ConvTransition]
-    convertForLetterAndState convState char = undefined
+    convertForLetterAndState convState char
+       | null (allTransitionsForLetterAndState char convState)        = []
+       | length (allTransitionsForLetterAndState char convState) == 1 = []
+       | otherwise                                                    = []
     allTransitionsForLetterAndState :: Char -> ConvState -> [Transition]
-    allTransitionsForLetterAndState char convState = filter (\transition -> [stateID (fromState transition)] == (convID convState))
+    allTransitionsForLetterAndState char convState = filter (\transition -> stateID (fromState transition) `elem` (convID convState))
                                                             (allTransitionsForLetter char)
     allTransitionsForLetter :: Char -> [Transition]
     allTransitionsForLetter char = filter (\transition ->  (inputLetter transition) == char) (getTransitions states)
