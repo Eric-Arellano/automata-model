@@ -121,7 +121,7 @@ addInitialState states = map (\convState -> if ((convID convState) == initialSta
                                             then convState { convIsInitial = True }
                                             else convState)
   where
-    initialStateID :: [StateID]
+    initialStateID :: ConvID
     initialStateID = [stateID $ getInitialState states]
 
 
@@ -130,30 +130,35 @@ addAcceptingStates states = map (\convState -> if not . null . acceptingIntersec
                                                then convState { convIsAccepting = True }
                                                else convState)
   where
-    acceptingIntersection :: ConvState -> [StateID]
+    acceptingIntersection :: ConvState -> ConvID
     acceptingIntersection convState = (convID convState) `List.intersect` acceptingStateIDs
     acceptingStateIDs :: [StateID]
     acceptingStateIDs = map stateID (getAcceptingStates states)
 
 
 addTransitionFunctions :: Alphabet -> [State] -> [ConvState] -> [ConvState]
-addTransitionFunctions alphabet states = map addToState
+addTransitionFunctions alphabet states convStates = map addConvTransitions convStates
   where
-    -- TODO: actually implement properly...
-    addToState :: ConvState -> ConvState
-    addToState convState = convState { convTransitions = convertForState convState }
-    convertForState :: ConvState -> [ConvTransition]
-    convertForState convState = concat $ map (convertForLetterAndState convState) alphabet
-    convertForLetterAndState :: ConvState -> Char -> [ConvTransition]
-    convertForLetterAndState convState char
-       | null (allTransitionsForLetterAndState char convState)        = []
-       | length (allTransitionsForLetterAndState char convState) == 1 = []
-       | otherwise                                                    = []
-    allTransitionsForLetterAndState :: Char -> ConvState -> [Transition]
-    allTransitionsForLetterAndState char convState = filter (\transition -> stateID (fromState transition) `elem` (convID convState))
-                                                            (allTransitionsForLetter char)
-    allTransitionsForLetter :: Char -> [Transition]
-    allTransitionsForLetter char = filter (\transition ->  (inputLetter transition) == char) (getTransitions states)
+    addConvTransitions :: ConvState -> ConvState
+    addConvTransitions convState = convState { convTransitions = findConvTransitions convState }
+    findConvTransitions :: ConvState -> [ConvTransition]
+    findConvTransitions convState = concat $ map (findConvTransitionsWithLetter convState) alphabet
+    findConvTransitionsWithLetter :: ConvState -> Char -> [ConvTransition]
+    findConvTransitionsWithLetter convState char
+       | null (getTransitionsForLetterAndState char convState)  = [createTransition convState char (getNullState convStates)]
+       | otherwise                                              = [createTransition convState char (getConvState (reduceFromStateToID (getTransitionsForLetterAndState char convState)) convStates)]
+    createTransition :: ConvState -> Char -> ConvState -> ConvTransition
+    createTransition to letter from = ConvTransition { convFromState = to
+                                                     , convInputLetter = letter
+                                                     , convToState = from }
+    reduceFromStateToID :: [Transition] -> ConvID
+    reduceFromStateToID = List.sort . map stateID . map toState
+    getTransitionsForLetterAndState :: Char -> ConvState -> [Transition]
+    getTransitionsForLetterAndState char convState = filter (\transition -> stateID (fromState transition) `elem` (convID convState))
+                                                            (getTransitionsForLetter char)
+    getTransitionsForLetter :: Char -> [Transition]
+    getTransitionsForLetter char = filter (\transition ->  (inputLetter transition) == char) (getTransitions states)
+
 
 removeUselessStates :: [ConvState] -> [ConvState]
 removeUselessStates convStates = filter (\cs -> convIsInitial cs || isReachable cs) convStates
@@ -178,8 +183,15 @@ convertBackStates = map convertState
     convertTransition convTransition = Transition { fromState = convertState (convFromState convTransition)
                                                   , inputLetter = convInputLetter convTransition
                                                   , toState = convertState (convToState convTransition) }
-    flattenID :: [StateID] -> StateID
+    flattenID :: ConvID -> StateID
     flattenID = foldl ((+).(*10)) 0
+
+
+getNullState :: [ConvState] -> ConvState
+getNullState = head . filter (\state -> convID state == [])
+
+getConvState :: ConvID -> [ConvState] -> ConvState
+getConvState targetID = head . filter (\state -> convID state == targetID)
 
 
 -- -------------------------------------------------------------------

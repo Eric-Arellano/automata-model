@@ -3,8 +3,8 @@ a
 b
 % Specification automaton
 % Transition function
-6 a 6
 1 a 2
+1 a 1
 % Initial state
 1
 % Final states
