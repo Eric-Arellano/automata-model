@@ -52,14 +52,14 @@ addDistances :: Vertex -> Graph -> Graph
 addDistances startVertex inGraph = bfs inGraph outGraph queue seen
   where
     queue = [startVertex]
+    seen = [startVertex]
     outGraph = Graph queue
-    seen = queue
 
 --     In       Out      Queue       Seen        Out
 bfs :: Graph -> Graph -> [Vertex] -> [Vertex] -> Graph
-bfs (Graph []) _ _ _ = Graph []  -- Empty graph -> output empty graph
+bfs (Graph []) _ _ _ = Graph []  -- empty graph -> output empty graph
 bfs _ outGraph [] _ = outGraph  -- empty queue -> output graph
-bfs inGraph (Graph (outStart:outEnd)) (current:remainingQueue) (g:h) = bfs inGraph outGraph updatedQueue updatedSeenAlready
+bfs inGraph (Graph (outStart:outEnd)) (current:remainingQueue) seenAlready = bfs inGraph outGraph updatedQueue updatedSeenAlready
   where
     currentID :: FA.StateID
     currentID = stateID current
@@ -69,15 +69,12 @@ bfs inGraph (Graph (outStart:outEnd)) (current:remainingQueue) (g:h) = bfs inGra
     currentNeighborsVertexes = getVertexesForIDs inGraph currentNeighborsIDs
     updatedDistance :: Int
     updatedDistance = distance current + 1
-    seenAlready :: [Vertex]  -- already processed by bfs
-    seenAlready = g : h
-    -- Remove all neighbors, to the current vertex, that have
-    -- been queued up before.
+    -- Remove all neighbors that have been queued up before
     neighborsNotAlreadySeen = filterNeighbors seenAlready currentNeighborsVertexes
     -- Update the predecessor label and distance for each current vertex neighbor.
     enqueue :: [Vertex]
     enqueue = updateDistanceParent neighborsNotAlreadySeen updatedDistance currentID
-    -- Update our breadth-first search tree/graph.
+    -- Update breadth-first search tree/graph.
     outGraph :: Graph
     outGraph = Graph $ (outStart:outEnd) ++ enqueue
     updatedQueue :: [Vertex]
@@ -91,8 +88,7 @@ getVertexesForIDs (Graph (x:y)) [] = x : y
 getVertexesForIDs (Graph (x:y)) ids = filter (\vertex -> stateID vertex `elem` ids) (x:y)
 
 vertexInVertexes :: Vertex -> [Vertex] -> Bool
-vertexInVertexes _ [] = False
-vertexInVertexes Vertex {stateID = stateID'} (x:y) = foldl (\ acc x -> stateID x == stateID' || acc) False (x:y)
+vertexInVertexes state vertexes = (stateID state) `elem` (map stateID vertexes)
 
 filterNeighbors :: [Vertex] -> [Vertex] -> [Vertex]
 filterNeighbors _ [] = []
