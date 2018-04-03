@@ -39,3 +39,8 @@ cabal.project.local~
 .HTF/
 .ghc.environment.*
 Main
+
+
+
+# Project
+output/
