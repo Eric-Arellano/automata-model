@@ -10,11 +10,11 @@ import qualified ShortestString
 
 main :: IO ()
 main = do
-  contents <- readFile "input/dfa-complex.txt"
+  contents <- readFile "input/nfa-simple.txt"
   let automaton = Maybe.fromJust . Parser.parseProgram $ (lines contents)
   let dfa = FiniteAutomata.toDFA automaton
 --  let complement = FiniteAutomata.complement automaton
-  print . ShortestString.experiment $ automaton
+  print . ShortestString.experiment $ dfa
   writeFile "output/1208487250_Milestone1_Dp.txt"
         . unlines
         . Output.automaton
