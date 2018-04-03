@@ -46,7 +46,7 @@ findState :: FA.Automaton -> Vertex -> FA.State
 findState automaton vertex = head . filter (\state -> FA.stateID state == stateID vertex) $ FA.states automaton
 
 findVertex :: Graph -> FA.StateID -> Vertex
-findVertex (Graph (x:y)) targetID = head . filter (\vertex -> stateID vertex == targetID) $ (x:y)
+findVertex (Graph vertexes) targetID = head . filter (\vertex -> stateID vertex == targetID) $ vertexes
 
 -- -------------------------------------------------
 -- BFS
@@ -63,7 +63,7 @@ addDistances startVertex inGraph = bfs inGraph outGraph queue seen
 bfs :: Graph -> Graph -> [Vertex] -> [Vertex] -> Graph
 bfs (Graph []) _ _ _ = Graph []  -- empty graph -> output empty graph
 bfs _ outGraph [] _ = outGraph  -- empty queue -> output graph
-bfs inGraph (Graph (outStart:outEnd)) (current:remainingQueue) seenAlready = bfs inGraph outGraph updatedQueue updatedSeenAlready
+bfs inGraph (Graph outVertexes) (current:remainingQueue) seenAlready = bfs inGraph outGraph updatedQueue updatedSeenAlready
   where
     currentID :: FA.StateID
     currentID = stateID current
@@ -73,14 +73,14 @@ bfs inGraph (Graph (outStart:outEnd)) (current:remainingQueue) seenAlready = bfs
     currentNeighborsVertexes = getVertexesForIDs inGraph currentNeighborsIDs
     updatedDistance :: Int
     updatedDistance = distance current + 1
-    -- Remove all neighbors that have been queued up before
+    -- Remove all neighbors already seen
     neighborsNotAlreadySeen = filterNeighbors seenAlready currentNeighborsVertexes
-    -- Update the predecessor label and distance for each current vertex neighbor.
+    -- Update each neighbor with parent & distance
     enqueue :: [Vertex]
     enqueue = updateDistanceParent neighborsNotAlreadySeen updatedDistance currentID
-    -- Update breadth-first search tree/graph.
+    -- Update graph
     outGraph :: Graph
-    outGraph = Graph $ (outStart:outEnd) ++ enqueue
+    outGraph = Graph (outVertexes ++ enqueue)
     updatedQueue :: [Vertex]
     updatedQueue = remainingQueue ++ enqueue
     updatedSeenAlready :: [Vertex]
@@ -88,8 +88,8 @@ bfs inGraph (Graph (outStart:outEnd)) (current:remainingQueue) seenAlready = bfs
 
 getVertexesForIDs :: Graph -> [FA.StateID] -> [Vertex]
 getVertexesForIDs (Graph []) _ = []  -- empty graph
-getVertexesForIDs (Graph (x:y)) [] = x : y
-getVertexesForIDs (Graph (x:y)) ids = filter (\vertex -> stateID vertex `elem` ids) (x:y)
+getVertexesForIDs (Graph vertexes) [] = vertexes
+getVertexesForIDs (Graph vertexes) ids = filter (\vertex -> stateID vertex `elem` ids) vertexes
 
 vertexInVertexes :: Vertex -> [Vertex] -> Bool
 vertexInVertexes state vertexes = (stateID state) `elem` (map stateID vertexes)
@@ -108,9 +108,9 @@ updateDistanceParent vertexes distance parentID = map (\vertex -> vertex {distan
 -- -------------------------------------------------
 
 shortestAcceptingVertex :: Graph -> Maybe Vertex
-shortestAcceptingVertex (Graph (x:y)) = List.find (\vertex -> isAccepting vertex == True)
-                                      . List.sortBy compareVertexDistance
-                                      $ (x:y)
+shortestAcceptingVertex (Graph vertexes) = List.find (\vertex -> isAccepting vertex == True)
+                                         . List.sortBy compareVertexDistance
+                                         $ vertexes
   where
     compareVertexDistance :: Vertex -> Vertex -> Ordering
     compareVertexDistance v1 v2 = compare (distance v1) (distance v2)
