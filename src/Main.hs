@@ -1,6 +1,7 @@
 module Main where
 
-import qualified Data.Maybe       as Maybe
+import qualified Data.Maybe         as Maybe
+import qualified System.Environment as Environment
 
 import qualified Parser
 import qualified FiniteAutomata
@@ -10,7 +11,8 @@ import qualified ShortestString
 
 main :: IO ()
 main = do
-  contents <- readFile "input/dfa-complex.txt"
+  args <- Environment.getArgs
+  contents <- readFile (head args)
   let automaton = Maybe.fromJust . Parser.parseProgram $ (lines contents)
   let dfa = FiniteAutomata.toDFA automaton
   let complement = FiniteAutomata.complement automaton
