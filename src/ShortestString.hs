@@ -8,10 +8,11 @@ import qualified FiniteAutomata as FA
 
 
 shortest :: FA.Automaton -> String
-shortest automaton = accompanyingString automaton
-                   . shortestAcceptingVertex
-                   . addDistances (initialVertex automaton)
-                   . toGraph $ automaton
+shortest automaton = case (shortestAcceptingVertex graph) of
+                        Just vertex -> accompanyingString automaton vertex
+                        Nothing -> "Bad"
+  where
+    graph = addDistances (initialVertex automaton) . toGraph $ automaton
 
 experiment :: FA.Automaton -> Graph
 experiment automaton = addDistances (initialVertex automaton)
@@ -103,11 +104,10 @@ updateDistanceParent vertexes distance parentID = map (\vertex -> vertex {distan
 -- Shortest path
 -- -------------------------------------------------
 
--- TODO: return MAYBE?
-shortestAcceptingVertex :: Graph -> Vertex
-shortestAcceptingVertex (Graph (x:y)) = head
+shortestAcceptingVertex :: Graph -> Maybe Vertex
+shortestAcceptingVertex (Graph (x:y)) = List.find (\vertex -> isAccepting vertex == True)
                                       . List.sortBy compareVertexDistance
-                                      . filter (\vertex -> isAccepting vertex == True) $ (x:y)
+                                      $ (x:y)
   where
     compareVertexDistance :: Vertex -> Vertex -> Ordering
     compareVertexDistance v1 v2 = compare (distance v1) (distance v2)
