@@ -97,8 +97,7 @@ filterNeighbors seen vertexNeighbors = filter (\vertex -> not $ vertexInVertexes
 
 updateDistanceParent :: [Vertex] -> Int -> FA.StateID -> [Vertex]
 updateDistanceParent [] _ _ = []
-updateDistanceParent (x:y) distance parentID = map (\ (Vertex stateID' neighbors' _ _ isAccepting') ->
-                                                    Vertex stateID' neighbors' distance parentID isAccepting') (x:y)
+updateDistanceParent vertexes distance parentID = map (\vertex -> vertex {distance = distance, parent = parentID}) vertexes
 
 -- -------------------------------------------------
 -- Shortest path
