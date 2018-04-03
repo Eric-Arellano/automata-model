@@ -1,4 +1,4 @@
-module ShortestString (shortest, experiment) where
+module ShortestString (shortest) where
 
 -- BFS algorithm adapted from https://lettier.github.io/posts/2016-04-29-breadth-first-search-in-haskell.html
 
@@ -9,14 +9,11 @@ import qualified FiniteAutomata as FA
 
 shortest :: FA.Automaton -> String
 shortest automaton = case (shortestAcceptingVertex graph) of
-                        Just vertex -> accompanyingString automaton vertex
+                        Just vertex -> accompanyingString automaton graph vertex
                         Nothing -> "Bad"
   where
     graph = addDistances (initialVertex automaton) . toGraph $ automaton
 
-experiment :: FA.Automaton -> Graph
-experiment automaton = addDistances (initialVertex automaton)
-                     . toGraph $ automaton
 
 -- -------------------------------------------------
 -- Graph data structure
@@ -44,6 +41,12 @@ toVertex state = Vertex { stateID = FA.stateID state
 
 initialVertex :: FA.Automaton -> Vertex
 initialVertex = toVertex . FA.getInitialState . FA.states
+
+findState :: FA.Automaton -> Vertex -> FA.State
+findState automaton vertex = head . filter (\state -> FA.stateID state == stateID vertex) $ FA.states automaton
+
+findVertex :: Graph -> FA.StateID -> Vertex
+findVertex (Graph (x:y)) targetID = head . filter (\vertex -> stateID vertex == targetID) $ (x:y)
 
 -- -------------------------------------------------
 -- BFS
@@ -112,9 +115,28 @@ shortestAcceptingVertex (Graph (x:y)) = List.find (\vertex -> isAccepting vertex
     compareVertexDistance :: Vertex -> Vertex -> Ordering
     compareVertexDistance v1 v2 = compare (distance v1) (distance v2)
 
+
 -- -------------------------------------------------
 -- Accompanying string
 -- -------------------------------------------------
 
-accompanyingString :: FA.Automaton -> Vertex -> String
-accompanyingString automaton final = undefined
+accompanyingString :: FA.Automaton -> Graph -> Vertex -> String
+accompanyingString automaton graph final = getTransitionLetters automaton graph final []
+
+
+getTransitionLetters :: FA.Automaton -> Graph -> Vertex -> [Char] -> [Char]
+getTransitionLetters automaton graph vertex priorLetters
+  | FA.isInitial (findState automaton vertex) == True   = priorLetters
+  | otherwise                                           = getTransitionLetters automaton graph parentVertex updatedLetters
+  where
+    parentVertex :: Vertex
+    parentVertex = findVertex graph (parent vertex)
+    updatedLetters :: [Char]
+    updatedLetters = findChar : priorLetters  -- prepend new letter
+    findChar :: Char
+    findChar = FA.inputLetter findTransition
+    findTransition :: FA.Transition
+    findTransition = head
+                   . filter (\transition -> FA.stateID (FA.fromState transition) == stateID parentVertex
+                              && FA.stateID (FA.toState transition) == stateID vertex)
+                   $ FA.getTransitions (FA.states automaton)
