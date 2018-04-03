@@ -121,8 +121,11 @@ shortestAcceptingVertex (Graph (x:y)) = List.find (\vertex -> isAccepting vertex
 -- -------------------------------------------------
 
 accompanyingString :: FA.Automaton -> Graph -> Vertex -> String
-accompanyingString automaton graph final = getTransitionLetters automaton graph final []
-
+accompanyingString automaton graph final
+  | null string = "epsilon"
+  | otherwise   = string
+  where
+    string = getTransitionLetters automaton graph final []
 
 getTransitionLetters :: FA.Automaton -> Graph -> Vertex -> [Char] -> [Char]
 getTransitionLetters automaton graph vertex priorLetters
