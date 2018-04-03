@@ -1,4 +1,4 @@
-module Parser (parseProgram) where
+module Parser (parseSpecification, parseSystem) where
 
 import qualified Data.List  as List
 import qualified Data.Char  as Char
@@ -7,13 +7,18 @@ import qualified Data.Text  as Text
 
 import qualified FiniteAutomata as FA
 
-
-parseProgram :: [Line] -> Maybe FA.Automaton
-parseProgram lines = do
+-- TODO: implement parsing the two automata
+parseSpecification :: [Line] -> Maybe FA.Automaton
+parseSpecification lines = do
     let trimmed = stripWhiteSpace lines
     input <- parseToPrimitives trimmed
     return $ convertToAutomaton input
 
+parseSystem :: [Line] -> Maybe FA.Automaton
+parseSystem lines = do
+    let trimmed = stripWhiteSpace lines
+    input <- parseToPrimitives trimmed
+    return $ convertToAutomaton input
 
 -- -------------------------------------------------------------------
 -- Parse to primitive data representation

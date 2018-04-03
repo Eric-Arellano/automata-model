@@ -10,7 +10,7 @@ import qualified FiniteAutomata as FA
 shortest :: FA.Automaton -> String
 shortest automaton = case (shortestAcceptingVertex graph) of
                         Just vertex -> accompanyingString automaton graph vertex
-                        Nothing -> "Bad"
+                        Nothing -> ""
   where
     graph = addDistances (initialVertex automaton) . toGraph $ automaton
 

@@ -12,14 +12,19 @@ import qualified ShortestString
 main :: IO ()
 main = do
   args <- Environment.getArgs
-  contents <- readFile (head args)
-  let automaton = Maybe.fromJust . Parser.parseProgram $ (lines contents)
-  let dfa = FiniteAutomata.toDFA automaton
-  let complement = FiniteAutomata.complement automaton
-  writeFile "output/1208487250_Milestone1_Dp.txt"
+  let fileName = if null args then "input/dfa-simple.txt" else head args
+  contents <- readFile fileName
+  let specification = FiniteAutomata.toDFA . Maybe.fromJust . Parser.parseSpecification $ (lines contents)
+  let system = FiniteAutomata.toDFA . Maybe.fromJust . Parser.parseSystem $ (lines contents)
+  let specComplement = FiniteAutomata.complement specification
+--  let intersection = FiniteAutomata.intersection specComplement system
+  let string = ShortestString.shortest specComplement
+--  let string = ShortestString.shortest intersection
+  let consoleOutput = if null string then "Accepted" else string
+  print consoleOutput
+  writeFile "output/1208487250_Milestone2_Dp.txt"
         . unlines
         . Output.automaton
-        $ (complement)
-  writeFile "output/1208487250_Milestone1_str.txt"
-        . ShortestString.shortest
-        $ (complement)
+        $ (specComplement)
+--        $ (intersection)
+  writeFile "output/1208487250_Milestone2_str.txt" string

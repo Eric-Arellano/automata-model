@@ -10,6 +10,7 @@ module FiniteAutomata
   , isNFA
   , isDFA
   , complement
+  , intersection
   ) where
 
 
