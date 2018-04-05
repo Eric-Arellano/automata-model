@@ -1,8 +1,10 @@
 # automata-model
 CSE 355 project to validate requirements through Finite Automata.
 
+Eric Arellano, ecarell1
+
 ## Prerequisites
-1. Haskell Stack
+1. [Haskell Stack](https://docs.haskellstack.org/en/stable/README/#how-to-install)
 
 ## To install
 Assumes Haskell Stack.
@@ -16,14 +18,13 @@ Assumes Haskell Stack.
 ### REPL
 1. `stack ghci`
 1. `:set args [path-to-input.txt]`
-1. `main` (run main)
+1. `main`
 
 ##### Update project
 `:r`
 
 ##### Quit REPL
 `:q`
-
 
 
 ## Assumptions
