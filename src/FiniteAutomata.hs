@@ -14,9 +14,11 @@ module FiniteAutomata
   ) where
 
 
-import qualified Data.List as List
-import qualified Data.Maybe as Maybe
-import qualified Control.Monad as Monad
+import qualified Data.List      as List
+import qualified Data.Maybe     as Maybe
+import qualified Control.Monad  as Monad
+import qualified Data.Monoid    as Monoid
+import qualified Data.Ord       as Ord
 
 data Automaton = Automaton { alphabet :: Alphabet
                            , states :: [State]
@@ -173,10 +175,10 @@ removeUselessStates convStates = filter (\cs -> convIsInitial cs || isReachable 
 
 
 convertBackStates :: [ConvState] -> [State]
-convertBackStates = map convertState
+convertBackStates allConvStates = map convertState allConvStates
   where
     convertState :: ConvState -> State
-    convertState convState = State { stateID = flattenID (convID convState)
+    convertState convState = State { stateID =  Maybe.fromJust $ lookup (convID convState) incrementedStateIDs
                                    , isInitial = convIsInitial convState
                                    , isAccepting = convIsAccepting convState
                                    , transitions = map convertTransition (convTransitions convState) }
@@ -184,9 +186,11 @@ convertBackStates = map convertState
     convertTransition convTransition = Transition { fromState = convertState (convFromState convTransition)
                                                   , inputLetter = convInputLetter convTransition
                                                   , toState = convertState (convToState convTransition) }
-    flattenID :: ConvID -> StateID
-    flattenID = foldl ((+).(*10)) 0
-
+    incrementedStateIDs :: [(ConvID, StateID)]
+    incrementedStateIDs = snd $ List.mapAccumL(\index conv -> (index + 1, (conv, index))) 0 allConvIDs
+    allConvIDs :: [ConvID]
+    allConvIDs = List.sortBy (Monoid.mconcat [Ord.comparing length, compare])
+               . map convID $ allConvStates
 
 getNullState :: [ConvState] -> ConvState
 getNullState = head . filter (\state -> convID state == [])

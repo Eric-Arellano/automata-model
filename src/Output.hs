@@ -1,6 +1,6 @@
 module Output (automaton) where
 
-
+import qualified Data.List      as List
 import qualified FiniteAutomata as FA
 
 automaton :: FA.Automaton -> [String]
@@ -26,7 +26,9 @@ transitions automaton = ["% Transition function"] ++ map outputTransition allTra
                                 ++ " "
                                 ++ show (FA.stateID (FA.toState transition))
     allTransitions :: [FA.Transition]
-    allTransitions = foldl (++) [] . map FA.transitions $ FA.states automaton
+    allTransitions = List.sortBy (\t1 t2 -> compare (FA.stateID (FA.fromState t1)) (FA.stateID (FA.fromState t2)))
+                   . foldl (++) [] . map FA.transitions
+                   $ FA.states automaton
 
 initialState :: FA.Automaton -> [String]
 initialState automaton = ["% Initial state", getInitialStateID]
