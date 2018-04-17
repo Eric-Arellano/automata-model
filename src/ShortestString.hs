@@ -64,6 +64,7 @@ bfs :: Graph -> Graph -> [Vertex] -> [Vertex] -> Graph
 bfs (Graph []) _ _ _ = Graph []  -- empty graph -> output empty graph
 bfs _ outGraph [] _ = outGraph  -- empty queue -> output graph
 bfs inGraph (Graph outVertexes) (current:remainingQueue) seenAlready = bfs inGraph outGraph updatedQueue updatedSeenAlready
+  -- Only returns Vertexes reachable from StartVertex.
   where
     currentID :: FA.StateID
     currentID = stateID current
