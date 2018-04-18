@@ -45,8 +45,8 @@ type DFA = Automaton
 -- Getters
 -- -------------------------------------------------------------------
 
-getInitialState :: [State] -> State
-getInitialState = head . filter (\state -> isInitial state == True)
+getInitialState :: [State] -> Maybe State
+getInitialState = List.find (\state -> isInitial state == True)
 
 getAcceptingStates :: [State] -> [State]
 getAcceptingStates = filter (\state -> isAccepting state == True)
@@ -125,7 +125,9 @@ addInitialState states = map (\convState -> if ((convID convState) == initialSta
                                             else convState)
   where
     initialStateID :: ConvID
-    initialStateID = [stateID $ getInitialState states]
+    initialStateID = case getInitialState states of
+                        Just i  -> [stateID i]
+                        Nothing -> [-1]
 
 
 addAcceptingStates :: [State] -> [ConvState] -> [ConvState]
@@ -148,12 +150,12 @@ addTransitionFunctions alphabet states convStates = map addConvTransitions convS
     findConvTransitions convState = concat $ map (findConvTransitionsWithLetter convState) alphabet
     findConvTransitionsWithLetter :: ConvState -> Char -> [ConvTransition]
     findConvTransitionsWithLetter convState char
-       | null (getTransitionsForLetterAndState char convState)  = [createTransition convState char (getNullState convStates)]
-       | otherwise                                              = [createTransition convState char (getConvState (reduceFromStateToID (getTransitionsForLetterAndState char convState)) convStates)]
+       | null (getTransitionsForLetterAndState char convState)  = [createTransition convState char (Maybe.fromJust (getNullState convStates))]
+       | otherwise                                              = [createTransition convState char (Maybe.fromJust (getConvState (reduceFromStateToID (getTransitionsForLetterAndState char convState)) convStates))]
     createTransition :: ConvState -> Char -> ConvState -> ConvTransition
-    createTransition to letter from = ConvTransition { convFromState = to
+    createTransition from letter to = ConvTransition { convFromState = from
                                                      , convInputLetter = letter
-                                                     , convToState = from }
+                                                     , convToState = to }
     reduceFromStateToID :: [Transition] -> ConvID
     reduceFromStateToID = List.sort . map stateID . map toState
     getTransitionsForLetterAndState :: Char -> ConvState -> [Transition]
@@ -178,7 +180,7 @@ convertBackStates :: [ConvState] -> [State]
 convertBackStates allConvStates = map convertState allConvStates
   where
     convertState :: ConvState -> State
-    convertState convState = State { stateID =  Maybe.fromJust $ lookup (convID convState) incrementedStateIDs
+    convertState convState = State { stateID =  Maybe.fromMaybe (-1) (lookup (convID convState) incrementedStateIDs)
                                    , isInitial = convIsInitial convState
                                    , isAccepting = convIsAccepting convState
                                    , transitions = map convertTransition (convTransitions convState) }
@@ -192,11 +194,11 @@ convertBackStates allConvStates = map convertState allConvStates
     allConvIDs = List.sortBy (Monoid.mconcat [Ord.comparing length, compare])
                . map convID $ allConvStates
 
-getNullState :: [ConvState] -> ConvState
-getNullState = head . filter (\state -> convID state == [])
+getNullState :: [ConvState] -> Maybe ConvState
+getNullState = List.find (\state -> convID state == [])
 
-getConvState :: ConvID -> [ConvState] -> ConvState
-getConvState targetID = head . filter (\state -> convID state == targetID)
+getConvState :: ConvID -> [ConvState] -> Maybe ConvState
+getConvState targetID = List.find (\state -> convID state == targetID)
 
 
 -- -------------------------------------------------------------------

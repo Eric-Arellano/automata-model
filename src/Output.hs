@@ -1,6 +1,7 @@
 module Output (automaton) where
 
 import qualified Data.List      as List
+import qualified Data.Monoid    as Monoid
 import qualified FiniteAutomata as FA
 
 automaton :: FA.Automaton -> [String]
@@ -26,17 +27,23 @@ transitions automaton = ["% Transition function"] ++ map outputTransition allTra
                                 ++ " "
                                 ++ show (FA.stateID (FA.toState transition))
     allTransitions :: [FA.Transition]
-    allTransitions = List.sortBy (\t1 t2 -> compare (FA.stateID (FA.fromState t1)) (FA.stateID (FA.fromState t2)))
+    allTransitions = List.sortBy (Monoid.mconcat [sortByFromState, sortByLetter])
                    . foldl (++) [] . map FA.transitions
                    $ FA.states automaton
+    sortByFromState :: FA.Transition -> FA.Transition -> Ordering
+    sortByFromState t1 t2 = compare (FA.stateID (FA.fromState t1)) (FA.stateID (FA.fromState t2))
+    sortByLetter :: FA.Transition -> FA.Transition -> Ordering
+    sortByLetter t1 t2 = compare (FA.inputLetter t1) (FA.inputLetter t2)
 
 initialState :: FA.Automaton -> [String]
 initialState automaton = ["% Initial state", getInitialStateID]
   where
     getInitialStateID :: String
-    getInitialStateID = show (FA.stateID getInitialState)
-    getInitialState :: FA.State
-    getInitialState = head . filter (FA.isInitial) $ FA.states automaton
+    getInitialStateID = case getInitialState of
+                          Just fa -> show (FA.stateID fa)
+                          Nothing -> ""
+    getInitialState :: Maybe FA.State
+    getInitialState = FA.getInitialState $ FA.states automaton
 
 finalStates :: FA.Automaton -> [String]
 finalStates automaton = ["% Final states"] ++ getFinalStateIDs

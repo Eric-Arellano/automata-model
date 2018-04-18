@@ -2,7 +2,8 @@ module ShortestString (shortest) where
 
 -- BFS algorithm adapted from https://lettier.github.io/posts/2016-04-29-breadth-first-search-in-haskell.html
 
-import qualified Data.List as List
+import qualified Data.List  as List
+import qualified Data.Maybe as Maybe
 
 import qualified FiniteAutomata as FA
 
@@ -40,7 +41,7 @@ toVertex state = Vertex { stateID = FA.stateID state
                         }
 
 initialVertex :: FA.Automaton -> Vertex
-initialVertex = toVertex . FA.getInitialState . FA.states
+initialVertex = toVertex . Maybe.fromJust . FA.getInitialState . FA.states
 
 findState :: FA.Automaton -> Vertex -> FA.State
 findState automaton vertex = head . filter (\state -> FA.stateID state == stateID vertex) $ FA.states automaton

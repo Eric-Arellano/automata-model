@@ -42,108 +42,119 @@ data InputData = InputData { alphabet :: Alphabet
 
 
 parseToPrimitives :: [Line] -> Maybe InputData
-parseToPrimitives lines = do
-    afterExpectAlphabet <- expect lines "% Input alphabet"
-    (alphabet, afterAlphabet) <- parseAlphabet afterExpectAlphabet
-    afterExpectSpec <- expect afterAlphabet "% Specification automaton"
-    afterExpectTransition <- expect afterExpectSpec "% Transition function"
-    (transitions, afterTransition) <- parseTransitions afterExpectTransition
-    afterExpectInitial <- expect afterTransition "% Initial state"
-    (startingState, afterStartingState) <- parseStartingState afterExpectInitial
-    afterExpectingAcceptingStates <- expect afterStartingState "% Final states"
-    (acceptingStates, _) <- parseAcceptingStates afterExpectingAcceptingStates
-    return InputData { alphabet=alphabet
-                     , transitions=transitions
-                     , startingState=startingState
-                     , acceptingStates=acceptingStates}
+parseToPrimitives lines = case (alphabet, transitions, startingState, acceptingStates) of
+                            (Nothing, _, _, _) -> Nothing
+                            (_, Nothing, _, _) -> Nothing
+                            (_, _, Nothing, _) -> Nothing
+                            (Just a, Just t, Just s, Nothing) -> Just InputData { alphabet=a
+                                                                                , transitions=t
+                                                                                , startingState=s
+                                                                                , acceptingStates=[]}
+                            (Just a, Just t, Just s, Just f) -> Just InputData { alphabet=a
+                                                                                , transitions=t
+                                                                                , startingState=s
+                                                                                , acceptingStates=f}
+  where
+    (_, afterExpectAlphabet) = expect lines "% Input alphabet"
+    (alphabet, afterAlphabet) = parseAlphabet afterExpectAlphabet
+    (_, afterExpectSpec) = expect afterAlphabet "% Specification automaton"
+    (_, afterExpectTransition) = expect afterExpectSpec "% Transition function"
+    (transitions, afterTransition) = parseTransitions afterExpectTransition
+    (_, afterExpectInitial) = expect afterTransition "% Initial state"
+    (startingState, afterStartingState) = parseStartingState afterExpectInitial
+    (_, afterExpectingAcceptingStates) = expect afterStartingState "% Final states"
+    (acceptingStates, _) = parseAcceptingStates afterExpectingAcceptingStates
 
 
-expect :: [Line] -> String -> Maybe [Line]
-expect lines value = wrap lines isValid remainingLines
+expect :: [Line] -> Line -> (Maybe Line, [Line])
+expect lines value = case firstLine of
+                       Just l
+                          | l == value -> (firstLine, remainingLines)
+                          | otherwise  -> (Nothing, remainingLines)
+                       _  -> (Nothing, remainingLines)
   where
     (firstLine, remainingLines) = extractFirstLine lines
-    isValid :: Bool
-    isValid = firstLine == value
 
 
-parseAlphabet :: [Line] -> Maybe (Alphabet, [Line])
-parseAlphabet lines = wrap lines isValid (alphabet, remainingLines)
+parseAlphabet :: [Line] -> (Maybe Alphabet, [Line])
+parseAlphabet lines = (alphabet, remainingLines)
   where
     (parsedLines, remainingLines) = extractSection lines
-    isValid :: Bool
-    isValid = all (lineLength 1) parsedLines
-    alphabet :: Alphabet
-    alphabet = concat parsedLines
+    alphabet :: Maybe Alphabet
+    alphabet = sequence letters
+    letters :: [Maybe Char]
+    letters = map parse $ parsedLines
+    parse :: Line -> Maybe Char
+    parse line = case line of
+                   x:_ -> Just x
+                   []  -> Nothing
 
 
-parseTransitions :: [Line] -> Maybe ([Transition], [Line])
-parseTransitions lines = wrap lines isValid (transitions, remainingLines)
+parseTransitions :: [Line] -> (Maybe [Transition], [Line])
+parseTransitions lines = (transitions, remainingLines)
   where
     (parsedLines, remainingLines) = extractSection lines
-    isValid :: Bool
-    isValid = all (lineLength 5) parsedLines
-    transitions :: [Transition]
-    transitions = map parse parsedLines
-    parse :: Line -> Transition
-    parse line = Transition { fromState=(parseFrom line)
-                            , letter=(parseLetter line)
-                            , toState=(parseTo line)}
-    parseFrom :: Line -> StateID
-    parseFrom line = Char.digitToInt (line !! 0)
-    parseLetter :: Line -> Char
-    parseLetter line = line !! 2
-    parseTo :: Line -> StateID
-    parseTo line = Char.digitToInt (line !! 4)
+    transitions :: Maybe [Transition]
+    transitions = sequence . map parse $ parsedLines
+    parse :: Line -> Maybe Transition
+    parse line = case (parseFrom line, parseLetter line, parseTo line) of
+                      (Nothing, _, _) -> Nothing
+                      (_, Nothing, _) -> Nothing
+                      (_, _, Nothing) -> Nothing
+                      (Just from, Just letter, Just to) -> Just Transition { fromState=from
+                                                                           , letter=letter
+                                                                           , toState=to}
+    parseFrom :: Line -> Maybe StateID
+    parseFrom line = case line of
+                       x:_ -> Just (Char.digitToInt x)  -- TODO: digitToInt not type safe
+                       []  -> Nothing
+    parseLetter :: Line -> Maybe Char
+    parseLetter line = case drop 2 line of
+                         x:_ -> Just x
+                         []  -> Nothing
+    parseTo :: Line -> Maybe StateID
+    parseTo line = case drop 4 line of
+                     x:_ -> Just (Char.digitToInt x)
+                     []  -> Nothing
 
 
-parseStartingState :: [Line] -> Maybe (StateID, [Line])
-parseStartingState lines = wrap lines isValid (state, remainingLines)
+parseStartingState :: [Line] -> (Maybe StateID, [Line])
+parseStartingState lines = (state, remainingLines)
   where
     (firstLine, remainingLines) = extractFirstLine lines
-    isValid :: Bool
-    isValid = length firstLine == 1
-    state :: StateID
-    state = Char.digitToInt (head firstLine)
+    state :: Maybe StateID
+    state = case firstLine of
+               Just (x:_) -> Just (Char.digitToInt x)
+               _          -> Nothing
 
 
-parseAcceptingStates :: [Line] -> Maybe ([StateID], [Line])
-parseAcceptingStates lines = wrap lines isValid (states, remainingLines)
+parseAcceptingStates :: [Line] -> (Maybe [StateID], [Line])
+parseAcceptingStates lines = (states, remainingLines)
   where
     (parsedLines, remainingLines) = extractSection lines
-    isValid :: Bool
-    isValid = all (lineLength 1) parsedLines
-    states :: [StateID]
-    states = map parse parsedLines
-    parse :: Line -> StateID
-    parse line = Char.digitToInt (head line)
+    states :: Maybe [StateID]
+    states = sequence . map parse $ parsedLines
+    parse :: Line -> Maybe StateID
+    parse line = case line of
+                   x:_ -> Just (Char.digitToInt x)
+                   []  -> Nothing
 
 
 stripWhiteSpace :: [Line] -> [Line]
 stripWhiteSpace =  map (Text.unpack . Text.strip . Text.pack)
 
-
-lineLength :: Int -> Line -> Bool
-lineLength numChars line = length line == numChars
-
-
-extractFirstLine :: [Line] -> (Line, [Line])
-extractFirstLine lines = (head lines, drop 1 lines)
-
+extractFirstLine :: [Line] -> (Maybe Line, [Line])
+extractFirstLine lines = (firstLine, drop 1 lines)
+  where
+    firstLine = case lines of
+                  x:_ -> Just x
+                  []  -> Nothing
 
 extractSection :: [Line] -> ([Line], [Line])
 extractSection = span isCurrentSection
-
-
-wrap :: [Line] -> Bool -> success -> Maybe success
-wrap lines isValid success
-  | length lines == 0   = Nothing
-  | isValid             = Just success
-  | otherwise           = Nothing
-
-
-isCurrentSection :: Line -> Bool
-isCurrentSection line = not ("%" `List.isPrefixOf` line || null line)
-
+  where
+    isCurrentSection :: Line -> Bool
+    isCurrentSection line = not ("%" `List.isPrefixOf` line || null line)
 
 -- -------------------------------------------------------------------
 -- Convert to Automaton
