@@ -30,12 +30,7 @@ main = do
 --  let string = ShortestString.shortest intersection
   let consoleOutput = if null string then "Accepted" else string
   print consoleOutput
-  writeFile "output/1208487250_Milestone2_Dp.txt"
-        . unlines
-        . Output.automaton
-        $ (systemDFA)
-----        $ (specComplement)
-----        $ (intersection)
+  writeFile "output/1208487250_Milestone2_Dp.txt" (unlines (Output.automata specDFA systemDFA))
   writeFile "output/1208487250_Milestone2_str.txt" string
 
 
