@@ -5,8 +5,7 @@ maintainer: Eric Arellano
 license: BSD3
 category: Desktop
 extra-source-files:
-
-ghc-options: -Wall
+- README.md
 
 dependencies:
   - base >= 4.9 && < 5
@@ -15,13 +14,16 @@ dependencies:
 library:
   source-dirs: src
   exposed-modules:
-    - Main
     - FiniteAutomata
     - Output
     - Parser
     - ShortestString
 
-executable:
-  main: Main.hs
-  source-dirs: src
-  dependencies:
+executables:
+  automata-model-exe:
+    main:           Main.hs
+    source-dirs:    app
+    ghc-options:
+    - -Wall
+    dependencies:
+    - automata-model

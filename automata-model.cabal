@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: fa9668caf71ec5f7ff116b1d1cd0289b037cff352928248ce5ba0e4452258a75
+-- hash: 861acd391d1bdaf5fc966f242f631902a22d914d5cfd5a56e74c2ed3b9ea228e
 
 name:           automata-model
 version:        0.1.0.0
@@ -14,15 +14,16 @@ license-file:   LICENSE
 build-type:     Simple
 cabal-version:  >= 1.10
 
+extra-source-files:
+    README.md
+
 library
   hs-source-dirs:
       src
-  ghc-options: -Wall
   build-depends:
       base >=4.9 && <5
     , text
   exposed-modules:
-      Main
       FiniteAutomata
       Output
       Parser
@@ -31,18 +32,15 @@ library
       Paths_automata_model
   default-language: Haskell2010
 
-executable automata-model
+executable automata-model-exe
   main-is: Main.hs
   hs-source-dirs:
-      src
+      app
   ghc-options: -Wall
   build-depends:
-      base >=4.9 && <5
+      automata-model
+    , base >=4.9 && <5
     , text
   other-modules:
-      FiniteAutomata
-      Output
-      Parser
-      ShortestString
       Paths_automata_model
   default-language: Haskell2010
