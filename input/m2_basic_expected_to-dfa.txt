@@ -1,0 +1,27 @@
+% Input alphabet
+a
+b
+% Specification automaton
+% Transition function
+0 a 0
+0 b 0
+1 a 2
+1 b 0
+2 a 2
+2 b 2
+% Initial state
+1
+% Final states
+2
+% System automaton
+% Transition function
+0 a 0
+0 b 0
+1 a 1
+1 b 1
+2 a 0
+2 b 2
+% Initial state
+1
+% Final states
+2

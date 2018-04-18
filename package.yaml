@@ -1,0 +1,29 @@
+name: automata-model
+version: 0.1.0.0
+description: https://github.com/githubuser/automata-model#readme
+maintainer: Eric Arellano
+license: BSD3
+category: Desktop
+extra-source-files:
+- README.md
+
+dependencies:
+  - base >= 4.9 && < 5
+  - text
+
+library:
+  source-dirs: src
+  exposed-modules:
+    - FiniteAutomata
+    - Output
+    - Parser
+    - ShortestString
+
+executables:
+  automata-model-exe:
+    main:           Main.hs
+    source-dirs:    app
+    ghc-options:
+    - -Wall
+    dependencies:
+    - automata-model

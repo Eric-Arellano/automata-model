@@ -4,8 +4,16 @@ b
 % Specification automaton
 % Transition function
 1 a 2
-1 b 1
 2 a 2
+2 b 2
+% Initial state
+1
+% Final states
+2
+% System automaton
+% Transition function
+1 a 1
+1 b 1
 2 b 2
 % Initial state
 1

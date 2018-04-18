@@ -2,7 +2,8 @@ module ShortestString (shortest) where
 
 -- BFS algorithm adapted from https://lettier.github.io/posts/2016-04-29-breadth-first-search-in-haskell.html
 
-import qualified Data.List as List
+import qualified Data.List  as List
+import qualified Data.Maybe as Maybe
 
 import qualified FiniteAutomata as FA
 
@@ -10,7 +11,7 @@ import qualified FiniteAutomata as FA
 shortest :: FA.Automaton -> String
 shortest automaton = case (shortestAcceptingVertex graph) of
                         Just vertex -> accompanyingString automaton graph vertex
-                        Nothing -> "Bad"
+                        Nothing -> ""
   where
     graph = addDistances (initialVertex automaton) . toGraph $ automaton
 
@@ -19,34 +20,34 @@ shortest automaton = case (shortestAcceptingVertex graph) of
 -- Graph data structure
 -- -------------------------------------------------
 
-data Vertex = Vertex { stateID :: FA.StateID
-                     , neighbors :: [FA.StateID]
-                     , parent :: FA.StateID
-                     , distance :: Int
-                     , isAccepting :: Bool
+data Vertex = Vertex { f_stateID :: FA.StateID
+                     , f_neighbors :: [FA.StateID]
+                     , f_parent :: FA.StateID
+                     , f_distance :: Int
+                     , f_isAccepting :: Bool
                      } deriving (Show, Eq)
 
 data Graph = Graph [Vertex] deriving (Show, Eq)
 
 toGraph :: FA.Automaton -> Graph
-toGraph automaton = Graph (map toVertex (FA.states automaton))
+toGraph automaton = Graph (map toVertex (FA.f_states automaton))
 
 toVertex :: FA.State -> Vertex
-toVertex state = Vertex { stateID = FA.stateID state
-                        , neighbors = map FA.stateID . map FA.toState $ FA.transitions state
-                        , isAccepting = FA.isAccepting state
-                        , distance = 0
-                        , parent = -1
+toVertex state = Vertex { f_stateID = FA.f_stateID state
+                        , f_neighbors = map FA.f_stateID . map FA.f_toState $ FA.f_transitions state
+                        , f_isAccepting = FA.f_isAccepting state
+                        , f_distance = 0
+                        , f_parent = -1
                         }
 
 initialVertex :: FA.Automaton -> Vertex
-initialVertex = toVertex . FA.getInitialState . FA.states
+initialVertex = toVertex . Maybe.fromJust . FA.getInitialState . FA.f_states
 
 findState :: FA.Automaton -> Vertex -> FA.State
-findState automaton vertex = head . filter (\state -> FA.stateID state == stateID vertex) $ FA.states automaton
+findState automaton vertex = head . filter (\state -> FA.f_stateID state == f_stateID vertex) $ FA.f_states automaton
 
 findVertex :: Graph -> FA.StateID -> Vertex
-findVertex (Graph vertexes) targetID = head . filter (\vertex -> stateID vertex == targetID) $ vertexes
+findVertex (Graph vertexes) targetID = head . filter (\vertex -> f_stateID vertex == targetID) $ vertexes
 
 -- -------------------------------------------------
 -- BFS
@@ -64,15 +65,16 @@ bfs :: Graph -> Graph -> [Vertex] -> [Vertex] -> Graph
 bfs (Graph []) _ _ _ = Graph []  -- empty graph -> output empty graph
 bfs _ outGraph [] _ = outGraph  -- empty queue -> output graph
 bfs inGraph (Graph outVertexes) (current:remainingQueue) seenAlready = bfs inGraph outGraph updatedQueue updatedSeenAlready
+  -- Only returns Vertexes reachable from StartVertex.
   where
     currentID :: FA.StateID
-    currentID = stateID current
+    currentID = f_stateID current
     currentNeighborsIDs :: [FA.StateID]
-    currentNeighborsIDs = neighbors current
+    currentNeighborsIDs = f_neighbors current
     currentNeighborsVertexes :: [Vertex]
     currentNeighborsVertexes = getVertexesForIDs inGraph currentNeighborsIDs
     updatedDistance :: Int
-    updatedDistance = distance current + 1
+    updatedDistance = f_distance current + 1
     -- Remove all neighbors already seen
     neighborsNotAlreadySeen = filterNeighbors seenAlready currentNeighborsVertexes
     -- Update each neighbor with parent & distance
@@ -89,10 +91,10 @@ bfs inGraph (Graph outVertexes) (current:remainingQueue) seenAlready = bfs inGra
 getVertexesForIDs :: Graph -> [FA.StateID] -> [Vertex]
 getVertexesForIDs (Graph []) _ = []  -- empty graph
 getVertexesForIDs (Graph vertexes) [] = vertexes
-getVertexesForIDs (Graph vertexes) ids = filter (\vertex -> stateID vertex `elem` ids) vertexes
+getVertexesForIDs (Graph vertexes) ids = filter (\vertex -> f_stateID vertex `elem` ids) vertexes
 
 vertexInVertexes :: Vertex -> [Vertex] -> Bool
-vertexInVertexes state vertexes = (stateID state) `elem` (map stateID vertexes)
+vertexInVertexes state vertexes = (f_stateID state) `elem` (map f_stateID vertexes)
 
 filterNeighbors :: [Vertex] -> [Vertex] -> [Vertex]
 filterNeighbors _ [] = []
@@ -101,19 +103,19 @@ filterNeighbors seen vertexNeighbors = filter (\vertex -> not $ vertexInVertexes
 
 updateDistanceParent :: [Vertex] -> Int -> FA.StateID -> [Vertex]
 updateDistanceParent [] _ _ = []
-updateDistanceParent vertexes distance parentID = map (\vertex -> vertex {distance = distance, parent = parentID}) vertexes
+updateDistanceParent vertexes distance parent = map (\vertex -> vertex {f_distance = distance, f_parent = parent}) vertexes
 
 -- -------------------------------------------------
 -- Shortest path
 -- -------------------------------------------------
 
 shortestAcceptingVertex :: Graph -> Maybe Vertex
-shortestAcceptingVertex (Graph vertexes) = List.find (\vertex -> isAccepting vertex == True)
+shortestAcceptingVertex (Graph vertexes) = List.find (\vertex -> f_isAccepting vertex == True)
                                          . List.sortBy compareVertexDistance
                                          $ vertexes
   where
     compareVertexDistance :: Vertex -> Vertex -> Ordering
-    compareVertexDistance v1 v2 = compare (distance v1) (distance v2)
+    compareVertexDistance v1 v2 = compare (f_distance v1) (f_distance v2)
 
 
 -- -------------------------------------------------
@@ -129,17 +131,17 @@ accompanyingString automaton graph final
 
 getTransitionLetters :: FA.Automaton -> Graph -> Vertex -> [Char] -> [Char]
 getTransitionLetters automaton graph vertex priorLetters
-  | FA.isInitial (findState automaton vertex) == True   = priorLetters
+  | FA.f_isInitial (findState automaton vertex) == True   = priorLetters
   | otherwise                                           = getTransitionLetters automaton graph parentVertex updatedLetters
   where
     parentVertex :: Vertex
-    parentVertex = findVertex graph (parent vertex)
+    parentVertex = findVertex graph (f_parent vertex)
     updatedLetters :: [Char]
     updatedLetters = findChar : priorLetters  -- prepend new letter
     findChar :: Char
-    findChar = FA.inputLetter findTransition
+    findChar = FA.f_inputLetter findTransition
     findTransition :: FA.Transition
     findTransition = head
-                   . filter (\transition -> FA.stateID (FA.fromState transition) == stateID parentVertex
-                              && FA.stateID (FA.toState transition) == stateID vertex)
-                   $ FA.getTransitions (FA.states automaton)
+                   . filter (\transition -> FA.f_stateID (FA.f_fromState transition) == f_stateID parentVertex
+                              && FA.f_stateID (FA.f_toState transition) == f_stateID vertex)
+                   $ FA.getTransitions (FA.f_states automaton)
