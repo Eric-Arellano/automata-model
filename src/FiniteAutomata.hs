@@ -150,8 +150,8 @@ addTransitionFunctions alphabet states convStates = map addConvTransitions convS
     findConvTransitions convState = concat $ map (findConvTransitionsWithLetter convState) alphabet
     findConvTransitionsWithLetter :: ConvState -> Char -> [ConvTransition]
     findConvTransitionsWithLetter convState char
-       | null (getTransitionsForLetterAndState char convState)  = [createTransition convState char (Maybe.fromJust (getNullState convStates))]
-       | otherwise                                              = [createTransition convState char (Maybe.fromJust (getConvState (reduceFromStateToID (getTransitionsForLetterAndState char convState)) convStates))]
+       | null (getTransitionsForLetterAndState char convState)  = [createTransition convState char emptyConvState]
+       | otherwise                                              = [createTransition convState char (findAccompanyingState convState char)]
     createTransition :: ConvState -> Char -> ConvState -> ConvTransition
     createTransition from letter to = ConvTransition { convFromState = from
                                                      , convInputLetter = letter
@@ -163,6 +163,16 @@ addTransitionFunctions alphabet states convStates = map addConvTransitions convS
                                                             (getTransitionsForLetter char)
     getTransitionsForLetter :: Char -> [Transition]
     getTransitionsForLetter char = filter (\transition ->  (f_inputLetter transition) == char) (getTransitions states)
+    emptyConvState :: ConvState
+    emptyConvState = case (getNullState convStates) of
+                        Just x  -> x
+                        Nothing -> failState
+    findAccompanyingState :: ConvState -> Char -> ConvState
+    findAccompanyingState source char = case (getConvState (reduceFromStateToID (getTransitionsForLetterAndState char source)) convStates) of
+                                            Just x -> x
+                                            Nothing -> failState
+    failState :: ConvState
+    failState = ConvState {convID=[-1], convIsInitial=False, convIsAccepting=False, convTransitions=[]}
 
 
 removeUselessStates :: [ConvState] -> [ConvState]
