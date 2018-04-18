@@ -26,11 +26,13 @@ main = do
 --  let specComplement = FiniteAutomata.complement specDFA
 --  let intersection = FiniteAutomata.intersection specComplement system
   let string = ShortestString.shortest specDFA
+--  let string = ShortestString.shortest systemDFA
 --  let string = ShortestString.shortest specComplement
 --  let string = ShortestString.shortest intersection
   let consoleOutput = if null string then "Accepted" else string
   print consoleOutput
   writeFile "output/1208487250_Milestone2_Dp.txt" (unlines (Output.automata specDFA systemDFA))
+--  writeFile "output/1208487250_Milestone2_Dp.txt" (unlines (Output.automata (Maybe.fromJust spec) (Maybe.fromJust system)))
   writeFile "output/1208487250_Milestone2_str.txt" string
 
 

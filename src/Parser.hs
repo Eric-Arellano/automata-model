@@ -24,7 +24,7 @@ parseAutomata input = case (alphabet, spec, system) of
 -- Parse alphabet & automata
 -- --------------------------------------------------------------------
 
-type Alphabet = [Char]
+type Alphabet = [Char]   -- TODO: stop using duplicated data structures like this, StateID, and Transition
 
 parseAlphabet :: [Line] -> (Maybe Alphabet, [Line])
 parseAlphabet input = (alphabet, remainingLines)
@@ -175,61 +175,33 @@ extractSection = span isCurrentSection
     isCurrentSection :: Line -> Bool
     isCurrentSection line = not ("%" `List.isPrefixOf` line || null line)
 
+
 -- -------------------------------------------------------------------
 -- Convert to Automaton
-----------------------------------------------------------------------
+-- -------------------------------------------------------------------
 
 convertToAutomaton :: Alphabet -> InputData -> FA.Automaton
 convertToAutomaton alphabet input
     = FA.Automaton { FA.f_alphabet = alphabet
-                   , FA.f_states = states }
-  where
-    states = addAccepting (f_acceptingStates input)
-           . addInitial (f_startingState input)
-           . addTransitions (f_transitions input)
-           . initStates $ input
+                   , FA.f_states = findStates input
+                   , FA.f_initialState = f_startingState input
+                   , FA.f_acceptingStates = f_acceptingStates input
+                   , FA.f_transitions = convertTransitions input }
 
-initStates :: InputData -> [FA.State]
-initStates input = map newState uniqueIDs
+
+findStates :: InputData -> [FA.StateID]
+findStates input = uniqueIDs  -- TODO: should this also check init and accept states?
   where
-    newState :: StateID -> FA.State
-    newState stateID = FA.State { FA.f_stateID = stateID
-                                , FA.f_isInitial = False
-                                , FA.f_isAccepting = False
-                                , FA.f_transitions = []}
     uniqueIDs :: [StateID]
     uniqueIDs = List.nub (getIDs f_fromState ++ getIDs f_toState)
     getIDs :: (Transition -> StateID) -> [StateID]
     getIDs target = map target . f_transitions $ input
 
 
-addTransitions :: [Transition] -> [FA.State] -> [FA.State]
-addTransitions transitions states = map add states
-  where
-    add :: FA.State -> FA.State
-    add state = state { FA.f_transitions = findAll (FA.f_stateID state)}
-    findAll :: StateID -> [FA.Transition]
-    findAll stateID = convertTransitions . filter (matchingIDs stateID) $ transitions
-    matchingIDs :: StateID -> Transition -> Bool
-    matchingIDs stateID transition = (f_fromState transition) == stateID
-
-
-convertTransitions :: [Transition] -> [FA.Transition]
-convertTransitions = map convert
+convertTransitions :: InputData -> [FA.Transition]
+convertTransitions input = map convert (f_transitions input)
   where
     convert :: Transition -> FA.Transition
     convert transition = FA.Transition { FA.f_fromState = f_fromState transition
                                        , FA.f_inputLetter = (f_letter transition)
                                        , FA.f_toState = f_toState transition }
-
-
-addInitial :: StateID -> [FA.State] -> [FA.State]
-addInitial stateID = map (\state -> if ((FA.f_stateID state) == stateID)
-                                    then state { FA.f_isInitial = True }
-                                    else state)
-
-
-addAccepting :: [StateID] -> [FA.State] -> [FA.State]
-addAccepting stateIDs = map (\state -> if ((FA.f_stateID state) `elem` stateIDs)
-                                       then state { FA.f_isAccepting = True }
-                                       else state)

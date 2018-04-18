@@ -9,11 +9,12 @@ import qualified FiniteAutomata as FA
 
 
 shortest :: FA.Automaton -> String
-shortest automaton = case (shortestAcceptingVertex graph) of
+shortest automaton = case (shortestAcceptingVertex automaton graph) of
                         Just vertex -> accompanyingString automaton graph vertex
                         Nothing -> ""
   where
-    graph = addDistances (initialVertex automaton) . toGraph $ automaton
+    graph = addDistances (findVertex emptyGraph (FA.f_initialState automaton)) emptyGraph
+    emptyGraph = toGraph automaton
 
 
 -- -------------------------------------------------
@@ -24,30 +25,26 @@ data Vertex = Vertex { f_stateID :: FA.StateID
                      , f_neighbors :: [FA.StateID]
                      , f_parent :: FA.StateID
                      , f_distance :: Int
-                     , f_isAccepting :: Bool
                      } deriving (Show, Eq)
 
 data Graph = Graph [Vertex] deriving (Show, Eq)
 
 toGraph :: FA.Automaton -> Graph
-toGraph automaton = Graph (map toVertex (FA.f_states automaton))
+toGraph automaton = Graph (map (toVertex automaton) (FA.f_states automaton))
 
-toVertex :: FA.State -> Vertex
-toVertex state = Vertex { f_stateID = FA.f_stateID state
-                        , f_neighbors = map FA.f_toState $ FA.f_transitions state
-                        , f_isAccepting = FA.f_isAccepting state
-                        , f_distance = 0
-                        , f_parent = -1
-                        }
-
-initialVertex :: FA.Automaton -> Vertex
-initialVertex = toVertex . Maybe.fromJust . FA.getInitialState . FA.f_states
-
-findState :: FA.Automaton -> Vertex -> FA.State
-findState automaton vertex = head . filter (\state -> FA.f_stateID state == f_stateID vertex) $ FA.f_states automaton
+toVertex :: FA.Automaton -> FA.StateID -> Vertex
+toVertex automaton stateID = Vertex { f_stateID = stateID
+                                    , f_neighbors = findNeighbors
+                                    , f_distance = 0
+                                    , f_parent = -1 }
+  where
+    findNeighbors = map FA.f_toState
+                  . filter (\t -> (FA.f_fromState t) == stateID)
+                  $ FA.f_transitions automaton
 
 findVertex :: Graph -> FA.StateID -> Vertex
-findVertex (Graph vertexes) targetID = head . filter (\vertex -> f_stateID vertex == targetID) $ vertexes
+findVertex (Graph vertexes) targetID = Maybe.fromJust . List.find (\vertex -> f_stateID vertex == targetID) $ vertexes
+
 
 -- -------------------------------------------------
 -- BFS
@@ -105,14 +102,15 @@ updateDistanceParent :: [Vertex] -> Int -> FA.StateID -> [Vertex]
 updateDistanceParent [] _ _ = []
 updateDistanceParent vertexes distance parent = map (\vertex -> vertex {f_distance = distance, f_parent = parent}) vertexes
 
+
 -- -------------------------------------------------
 -- Shortest path
 -- -------------------------------------------------
 
-shortestAcceptingVertex :: Graph -> Maybe Vertex
-shortestAcceptingVertex (Graph vertexes) = List.find (\vertex -> f_isAccepting vertex == True)
-                                         . List.sortBy compareVertexDistance
-                                         $ vertexes
+shortestAcceptingVertex :: FA.Automaton -> Graph -> Maybe Vertex
+shortestAcceptingVertex automaton (Graph vertexes) = List.find (\vertex -> (f_stateID vertex) `elem` (FA.f_acceptingStates automaton))
+                                                   . List.sortBy compareVertexDistance
+                                                   $ vertexes
   where
     compareVertexDistance :: Vertex -> Vertex -> Ordering
     compareVertexDistance v1 v2 = compare (f_distance v1) (f_distance v2)
@@ -123,15 +121,13 @@ shortestAcceptingVertex (Graph vertexes) = List.find (\vertex -> f_isAccepting v
 -- -------------------------------------------------
 
 accompanyingString :: FA.Automaton -> Graph -> Vertex -> String
-accompanyingString automaton graph final
-  | null string = "epsilon"
-  | otherwise   = string
-  where
-    string = getTransitionLetters automaton graph final []
+accompanyingString automaton graph final = case getTransitionLetters automaton graph final [] of
+                                             (x:xs) -> x : xs
+                                             []    -> "epsilon"
 
 getTransitionLetters :: FA.Automaton -> Graph -> Vertex -> [Char] -> [Char]
 getTransitionLetters automaton graph vertex priorLetters
-  | FA.f_isInitial (findState automaton vertex) == True   = priorLetters
+  | (f_stateID vertex) == (FA.f_initialState automaton) = priorLetters
   | otherwise                                           = getTransitionLetters automaton graph parentVertex updatedLetters
   where
     parentVertex :: Vertex
@@ -144,4 +140,4 @@ getTransitionLetters automaton graph vertex priorLetters
     findTransition = head
                    . filter (\transition ->  FA.f_fromState transition == f_stateID parentVertex
                               && FA.f_toState transition == f_stateID vertex)
-                   $ FA.getTransitions (FA.f_states automaton)
+                   $ FA.f_transitions automaton
