@@ -16,13 +16,12 @@ main = do
   fileName <- getFileName
   contents <- readFile fileName
   -- Parse
-  let spec = Parser.parseSpecification (lines contents)
+  let (spec, system) = Parser.parseAutomata (lines contents)
   exitIfParseFail spec "specification automaton"
---  let system = Parser.parseSystem (lines contents)
-  exitIfParseFail spec "system automaton"
+  exitIfParseFail system "system automaton"
   -- Convert to DFA
   let specDFA = FiniteAutomata.toDFA . Maybe.fromJust $ spec
---  let systemDFA = FiniteAutomata.toDFA . Maybe.fromJust $ system
+  let systemDFA = FiniteAutomata.toDFA . Maybe.fromJust $ system
   -- Complement & intersection
 --  let specComplement = FiniteAutomata.complement specDFA
 --  let intersection = FiniteAutomata.intersection specComplement system
@@ -34,7 +33,7 @@ main = do
   writeFile "output/1208487250_Milestone2_Dp.txt"
         . unlines
         . Output.automaton
-        $ (specDFA)
+        $ (systemDFA)
 ----        $ (specComplement)
 ----        $ (intersection)
   writeFile "output/1208487250_Milestone2_str.txt" string

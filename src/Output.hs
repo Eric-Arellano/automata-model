@@ -49,6 +49,6 @@ finalStates :: FA.Automaton -> [String]
 finalStates fa = ["% Final states"] ++ getFinalStateIDs
   where
     getFinalStateIDs :: [String]
-    getFinalStateIDs = map show . map FA.f_stateID $ getFinalStates
+    getFinalStateIDs = List.sort . map show . map FA.f_stateID $ getFinalStates
     getFinalStates :: [FA.State]
     getFinalStates = filter (FA.f_isAccepting) (FA.f_states fa)

@@ -1,4 +1,4 @@
-module Parser (parseSpecification, parseSystem) where
+module Parser (parseAutomata) where
 
 import qualified Data.List  as List
 import qualified Data.Char  as Char
@@ -7,26 +7,64 @@ import qualified Data.Text  as Text
 
 import qualified FiniteAutomata as FA
 
--- TODO: implement parsing the two automata
-parseSpecification :: [Line] -> Maybe FA.Automaton
-parseSpecification input = do
-    let trimmed = stripWhiteSpace input
-    primitives <- parseToPrimitives trimmed
-    return $ convertToAutomaton primitives
+type Line = String
 
-parseSystem :: [Line] -> Maybe FA.Automaton
-parseSystem input = do
-    let trimmed = stripWhiteSpace input
-    primitives <- parseToPrimitives trimmed
-    return $ convertToAutomaton primitives
+parseAutomata :: [Line] -> (Maybe FA.Automaton, Maybe FA.Automaton)
+parseAutomata input = case (alphabet, spec, system) of
+                        (Nothing, _, _) -> (Nothing, Nothing)
+                        (_, x, y)       -> (x, y)
+  where
+    trimmed = stripWhiteSpace input
+    (alphabet, afterAlphabet) = parseAlphabet trimmed
+    (spec, afterSpec) = parseSpecification afterAlphabet (Maybe.fromMaybe [] alphabet)
+    (system, _) = parseSystem afterSpec (Maybe.fromMaybe [] alphabet)
+
+
+-- -------------------------------------------------------------------
+-- Parse alphabet & automata
+-- --------------------------------------------------------------------
+
+type Alphabet = [Char]
+
+parseAlphabet :: [Line] -> (Maybe Alphabet, [Line])
+parseAlphabet input = (alphabet, remainingLines)
+  where
+    (_, afterHeader) = expect input "% Input alphabet"
+    (parsedLines, remainingLines) = extractSection afterHeader
+    alphabet :: Maybe Alphabet
+    alphabet = sequence letters
+    letters :: [Maybe Char]
+    letters = map parse $ parsedLines
+    parse :: Line -> Maybe Char
+    parse line = case line of
+                   x:_ -> Just x
+                   []  -> Nothing
+
+
+parseSpecification :: [Line] -> Alphabet -> (Maybe FA.Automaton, [Line])
+parseSpecification input alphabet = (automaton, remainingLines)
+    where
+      (_, afterHeader) = expect input "% Specification automaton"
+      (primitives, remainingLines) = parseToPrimitives afterHeader
+      automaton = case primitives of
+                    Just p -> Just (convertToAutomaton alphabet p)
+                    Nothing -> Nothing
+
+
+parseSystem :: [Line] -> Alphabet -> (Maybe FA.Automaton, [Line])
+parseSystem input alphabet = (automaton, remainingLines)
+  where
+    (_, afterHeader) = expect input "% System automaton"
+    (primitives, remainingLines) = parseToPrimitives afterHeader
+    automaton = case primitives of
+                  Just p -> Just (convertToAutomaton alphabet p)
+                  Nothing -> Nothing
+
 
 -- -------------------------------------------------------------------
 -- Parse to primitive data representation
 -- --------------------------------------------------------------------
 
-type Line = String
-
-type Alphabet = [Char]
 type StateID = Int
 
 data Transition = Transition { f_fromState :: StateID
@@ -34,36 +72,31 @@ data Transition = Transition { f_fromState :: StateID
                              , f_toState :: StateID
                              } deriving (Show)
 
-data InputData = InputData { f_alphabet :: Alphabet
-                           , f_transitions :: [Transition]
+data InputData = InputData { f_transitions :: [Transition]
                            , f_startingState :: StateID
                            , f_acceptingStates :: [StateID]
                            } deriving (Show)
 
 
-parseToPrimitives :: [Line] -> Maybe InputData
-parseToPrimitives input = case (alphabet, transitions, startingState, acceptingStates) of
-                            (Nothing, _, _, _) -> Nothing
-                            (_, Nothing, _, _) -> Nothing
-                            (_, _, Nothing, _) -> Nothing
-                            (Just a, Just t, Just s, Nothing) -> Just InputData { f_alphabet=a
-                                                                                , f_transitions=t
-                                                                                , f_startingState=s
-                                                                                , f_acceptingStates=[]}
-                            (Just a, Just t, Just s, Just f) -> Just InputData { f_alphabet=a
-                                                                               , f_transitions=t
-                                                                               , f_startingState=s
-                                                                               , f_acceptingStates=f}
+parseToPrimitives :: [Line] -> (Maybe InputData, [Line])
+parseToPrimitives input = case (transitions, startingState, acceptingStates) of
+                            (Nothing, _, _) -> (Nothing, remainingLines)
+                            (_, Nothing, _) -> (Nothing, remainingLines)
+                            (Just t, Just s, Nothing) -> (Just InputData { f_transitions=t
+                                                                         , f_startingState=s
+                                                                         , f_acceptingStates=[]}
+                                                          ,  remainingLines)
+                            (Just t, Just s, Just f) -> (Just InputData { f_transitions=t
+                                                                        , f_startingState=s
+                                                                        , f_acceptingStates=f}
+                                                        , remainingLines)
   where
-    (_, afterExpectAlphabet) = expect input "% Input alphabet"
-    (alphabet, afterAlphabet) = parseAlphabet afterExpectAlphabet
-    (_, afterExpectSpec) = expect afterAlphabet "% Specification automaton"
-    (_, afterExpectTransition) = expect afterExpectSpec "% Transition function"
+    (_, afterExpectTransition) = expect input "% Transition function"
     (transitions, afterTransition) = parseTransitions afterExpectTransition
     (_, afterExpectInitial) = expect afterTransition "% Initial state"
     (startingState, afterStartingState) = parseStartingState afterExpectInitial
     (_, afterExpectingAcceptingStates) = expect afterStartingState "% Final states"
-    (acceptingStates, _) = parseAcceptingStates afterExpectingAcceptingStates
+    (acceptingStates, remainingLines) = parseAcceptingStates afterExpectingAcceptingStates
 
 
 expect :: [Line] -> Line -> (Maybe Line, [Line])
@@ -74,20 +107,6 @@ expect input value = case firstLine of
                        _  -> (Nothing, remainingLines)
   where
     (firstLine, remainingLines) = extractFirstLine input
-
-
-parseAlphabet :: [Line] -> (Maybe Alphabet, [Line])
-parseAlphabet input = (alphabet, remainingLines)
-  where
-    (parsedLines, remainingLines) = extractSection input
-    alphabet :: Maybe Alphabet
-    alphabet = sequence letters
-    letters :: [Maybe Char]
-    letters = map parse $ parsedLines
-    parse :: Line -> Maybe Char
-    parse line = case line of
-                   x:_ -> Just x
-                   []  -> Nothing
 
 
 parseTransitions :: [Line] -> (Maybe [Transition], [Line])
@@ -160,10 +179,10 @@ extractSection = span isCurrentSection
 -- Convert to Automaton
 ----------------------------------------------------------------------
 
-convertToAutomaton :: InputData -> FA.Automaton
-convertToAutomaton input
-    = FA.Automaton { FA.f_alphabet=(f_alphabet input)
-                   , FA.f_states=states }
+convertToAutomaton :: Alphabet -> InputData -> FA.Automaton
+convertToAutomaton alphabet input
+    = FA.Automaton { FA.f_alphabet = alphabet
+                   , FA.f_states = states }
   where
     states = addAccepting (f_acceptingStates input)
            . addInitial (f_startingState input)
