@@ -5,50 +5,50 @@ import qualified Data.Monoid    as Monoid
 import qualified FiniteAutomata as FA
 
 automaton :: FA.Automaton -> [String]
-automaton automaton =  alphabet automaton
-                    ++ ["% Specification automaton"]
-                    ++ transitions automaton
-                    ++ initialState automaton
-                    ++ finalStates automaton
+automaton fa =  alphabet fa
+             ++ ["% Specification automaton"]
+             ++ transitions fa
+             ++ initialState fa
+             ++ finalStates fa
 
 alphabet :: FA.Automaton -> [String]
-alphabet automaton = ["% Input alphabet"] ++ getAlphabet
+alphabet fa = ["% Input alphabet"] ++ getAlphabet
   where
    getAlphabet :: [String]
-   getAlphabet = map (\l -> [l]) (FA.alphabet automaton)
+   getAlphabet = map (\l -> [l]) (FA.f_alphabet fa)
 
 transitions :: FA.Automaton -> [String]
-transitions automaton = ["% Transition function"] ++ map outputTransition allTransitions
+transitions fa = ["% Transition function"] ++ map outputTransition allTransitions
   where
     outputTransition :: FA.Transition -> String
-    outputTransition transition = show (FA.stateID (FA.fromState transition))
+    outputTransition transition = show (FA.f_stateID (FA.f_fromState transition))
                                 ++ " "
-                                ++ [FA.inputLetter transition]
+                                ++ [FA.f_inputLetter transition]
                                 ++ " "
-                                ++ show (FA.stateID (FA.toState transition))
+                                ++ show (FA.f_stateID (FA.f_toState transition))
     allTransitions :: [FA.Transition]
     allTransitions = List.sortBy (Monoid.mconcat [sortByFromState, sortByLetter])
-                   . foldl (++) [] . map FA.transitions
-                   $ FA.states automaton
+                   . foldl (++) [] . map FA.f_transitions
+                   $ FA.f_states fa
     sortByFromState :: FA.Transition -> FA.Transition -> Ordering
-    sortByFromState t1 t2 = compare (FA.stateID (FA.fromState t1)) (FA.stateID (FA.fromState t2))
+    sortByFromState t1 t2 = compare (FA.f_stateID (FA.f_fromState t1)) (FA.f_stateID (FA.f_fromState t2))
     sortByLetter :: FA.Transition -> FA.Transition -> Ordering
-    sortByLetter t1 t2 = compare (FA.inputLetter t1) (FA.inputLetter t2)
+    sortByLetter t1 t2 = compare (FA.f_inputLetter t1) (FA.f_inputLetter t2)
 
 initialState :: FA.Automaton -> [String]
-initialState automaton = ["% Initial state", getInitialStateID]
+initialState fa = ["% Initial state", getInitialStateID]
   where
     getInitialStateID :: String
     getInitialStateID = case getInitialState of
-                          Just fa -> show (FA.stateID fa)
+                          Just x -> show (FA.f_stateID x)
                           Nothing -> ""
     getInitialState :: Maybe FA.State
-    getInitialState = FA.getInitialState $ FA.states automaton
+    getInitialState = FA.getInitialState $ FA.f_states fa
 
 finalStates :: FA.Automaton -> [String]
-finalStates automaton = ["% Final states"] ++ getFinalStateIDs
+finalStates fa = ["% Final states"] ++ getFinalStateIDs
   where
     getFinalStateIDs :: [String]
-    getFinalStateIDs = map show . map FA.stateID $ getFinalStates
+    getFinalStateIDs = map show . map FA.f_stateID $ getFinalStates
     getFinalStates :: [FA.State]
-    getFinalStates = filter (FA.isAccepting) (FA.states automaton)
+    getFinalStates = filter (FA.f_isAccepting) (FA.f_states fa)

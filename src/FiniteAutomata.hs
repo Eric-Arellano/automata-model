@@ -20,22 +20,22 @@ import qualified Control.Monad  as Monad
 import qualified Data.Monoid    as Monoid
 import qualified Data.Ord       as Ord
 
-data Automaton = Automaton { alphabet :: Alphabet
-                           , states :: [State]
+data Automaton = Automaton { f_alphabet :: Alphabet
+                           , f_states :: [State]
                            } deriving (Show, Eq)
 
 type Alphabet = [Char]
 
 type StateID = Int
-data State = State { stateID :: StateID
-                   , isInitial :: Bool
-                   , isAccepting :: Bool
-                   , transitions :: [Transition]
+data State = State { f_stateID :: StateID
+                   , f_isInitial :: Bool
+                   , f_isAccepting :: Bool
+                   , f_transitions :: [Transition]
                    } deriving (Show, Eq)
 
-data Transition = Transition { fromState :: State
-                             , inputLetter :: Char
-                             , toState :: State
+data Transition = Transition { f_fromState :: State
+                             , f_inputLetter :: Char
+                             , f_toState :: State
                              } deriving (Show, Eq)
 
 type DFA = Automaton
@@ -46,13 +46,13 @@ type DFA = Automaton
 -- -------------------------------------------------------------------
 
 getInitialState :: [State] -> Maybe State
-getInitialState = List.find (\state -> isInitial state == True)
+getInitialState = List.find (\state -> f_isInitial state == True)
 
 getAcceptingStates :: [State] -> [State]
-getAcceptingStates = filter (\state -> isAccepting state == True)
+getAcceptingStates = filter (\state -> f_isAccepting state == True)
 
 getTransitions :: [State] -> [Transition]
-getTransitions = foldl (++) [] . map transitions
+getTransitions = foldl (++) [] . map f_transitions
 
 
 -- -------------------------------------------------------------------
@@ -60,14 +60,14 @@ getTransitions = foldl (++) [] . map transitions
 -- -------------------------------------------------------------------
 
 isDFA :: Automaton -> Bool
-isDFA automaton = all everyInputDefined (states automaton)
+isDFA automaton = all everyInputDefined (f_states automaton)
   where
     everyInputDefined :: State -> Bool
-    everyInputDefined state = all (hasLetter state) (alphabet automaton)
+    everyInputDefined state = all (hasLetter state) (f_alphabet automaton)
     hasLetter :: State -> Char -> Bool
     hasLetter state letter = letter `List.elem` (transitionLetters state)
     transitionLetters :: State -> [Char]
-    transitionLetters state = map inputLetter (transitions state)
+    transitionLetters state = map f_inputLetter (f_transitions state)
 
 
 isNFA :: Automaton -> Bool
@@ -93,8 +93,8 @@ data ConvTransition = ConvTransition { convFromState :: ConvState
 toDFA :: Automaton -> DFA
 toDFA automaton
   | isDFA automaton   = automaton
-  | otherwise         = Automaton { alphabet = alphabet automaton
-                                  , states = convertBackStates
+  | otherwise         = Automaton { f_alphabet = f_alphabet automaton
+                                  , f_states = convertBackStates
                                            . removeUselessStates
                                            . addTransitionFunctions originalAlphabet originalStates
                                            . addAcceptingStates originalStates
@@ -103,12 +103,12 @@ toDFA automaton
                                            $ originalStates
                                   }
   where
-    originalAlphabet = alphabet automaton
-    originalStates = states automaton
+    originalAlphabet = f_alphabet automaton
+    originalStates = f_states automaton
 
 
 initConvStates :: [State] -> [ConvState]
-initConvStates = map initState . powerset . map stateID
+initConvStates = map initState . powerset . map f_stateID
   where
     initState :: [StateID] -> ConvState
     initState stateIDs = ConvState { convID = stateIDs
@@ -126,7 +126,7 @@ addInitialState states = map (\convState -> if ((convID convState) == initialSta
   where
     initialStateID :: ConvID
     initialStateID = case getInitialState states of
-                        Just i  -> [stateID i]
+                        Just i  -> [f_stateID i]
                         Nothing -> [-1]
 
 
@@ -138,7 +138,7 @@ addAcceptingStates states = map (\convState -> if not . null . acceptingIntersec
     acceptingIntersection :: ConvState -> ConvID
     acceptingIntersection convState = (convID convState) `List.intersect` acceptingStateIDs
     acceptingStateIDs :: [StateID]
-    acceptingStateIDs = map stateID (getAcceptingStates states)
+    acceptingStateIDs = map f_stateID (getAcceptingStates states)
 
 
 addTransitionFunctions :: Alphabet -> [State] -> [ConvState] -> [ConvState]
@@ -157,12 +157,12 @@ addTransitionFunctions alphabet states convStates = map addConvTransitions convS
                                                      , convInputLetter = letter
                                                      , convToState = to }
     reduceFromStateToID :: [Transition] -> ConvID
-    reduceFromStateToID = List.sort . map stateID . map toState
+    reduceFromStateToID = List.sort . map f_stateID . map f_toState
     getTransitionsForLetterAndState :: Char -> ConvState -> [Transition]
-    getTransitionsForLetterAndState char convState = filter (\transition -> stateID (fromState transition) `elem` (convID convState))
+    getTransitionsForLetterAndState char convState = filter (\transition -> f_stateID (f_fromState transition) `elem` (convID convState))
                                                             (getTransitionsForLetter char)
     getTransitionsForLetter :: Char -> [Transition]
-    getTransitionsForLetter char = filter (\transition ->  (inputLetter transition) == char) (getTransitions states)
+    getTransitionsForLetter char = filter (\transition ->  (f_inputLetter transition) == char) (getTransitions states)
 
 
 removeUselessStates :: [ConvState] -> [ConvState]
@@ -180,14 +180,14 @@ convertBackStates :: [ConvState] -> [State]
 convertBackStates allConvStates = map convertState allConvStates
   where
     convertState :: ConvState -> State
-    convertState convState = State { stateID =  Maybe.fromMaybe (-1) (lookup (convID convState) incrementedStateIDs)
-                                   , isInitial = convIsInitial convState
-                                   , isAccepting = convIsAccepting convState
-                                   , transitions = map convertTransition (convTransitions convState) }
+    convertState convState = State { f_stateID =  Maybe.fromMaybe (-1) (lookup (convID convState) incrementedStateIDs)
+                                   , f_isInitial = convIsInitial convState
+                                   , f_isAccepting = convIsAccepting convState
+                                   , f_transitions = map convertTransition (convTransitions convState) }
     convertTransition :: ConvTransition -> Transition
-    convertTransition convTransition = Transition { fromState = convertState (convFromState convTransition)
-                                                  , inputLetter = convInputLetter convTransition
-                                                  , toState = convertState (convToState convTransition) }
+    convertTransition convTransition = Transition { f_fromState = convertState (convFromState convTransition)
+                                                  , f_inputLetter = convInputLetter convTransition
+                                                  , f_toState = convertState (convToState convTransition) }
     incrementedStateIDs :: [(ConvID, StateID)]
     incrementedStateIDs = snd $ List.mapAccumL(\index conv -> (index + 1, (conv, index))) 0 allConvIDs
     allConvIDs :: [ConvID]
@@ -206,10 +206,10 @@ getConvState targetID = List.find (\state -> convID state == targetID)
 -- -------------------------------------------------------------------
 
 complement :: DFA -> DFA
-complement dfa = dfa { states = map invertAccept (states dfa) }
+complement dfa = dfa { f_states = map invertAccept (f_states dfa) }
   where
     invertAccept :: State -> State
-    invertAccept state = state { isAccepting = not (isAccepting state)}
+    invertAccept state = state { f_isAccepting = not (f_isAccepting state)}
 
 
 intersection :: DFA -> DFA -> DFA
