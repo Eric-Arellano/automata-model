@@ -25,17 +25,17 @@ transitions :: FA.Automaton -> [String]
 transitions fa = ["% Transition function"] ++ map outputTransition allTransitions
   where
     outputTransition :: FA.Transition -> String
-    outputTransition transition = show (FA.f_stateID (FA.f_fromState transition))
+    outputTransition transition = show (FA.f_fromState transition)
                                 ++ " "
                                 ++ [FA.f_inputLetter transition]
                                 ++ " "
-                                ++ show (FA.f_stateID (FA.f_toState transition))
+                                ++ show (FA.f_toState transition)
     allTransitions :: [FA.Transition]
     allTransitions = List.sortBy (Monoid.mconcat [sortByFromState, sortByLetter])
                    . foldl (++) [] . map FA.f_transitions
                    $ FA.f_states fa
     sortByFromState :: FA.Transition -> FA.Transition -> Ordering
-    sortByFromState t1 t2 = compare (FA.f_stateID (FA.f_fromState t1)) (FA.f_stateID (FA.f_fromState t2))
+    sortByFromState t1 t2 = compare (FA.f_fromState t1) (FA.f_fromState t2)
     sortByLetter :: FA.Transition -> FA.Transition -> Ordering
     sortByLetter t1 t2 = compare (FA.f_inputLetter t1) (FA.f_inputLetter t2)
 

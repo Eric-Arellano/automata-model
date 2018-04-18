@@ -34,7 +34,7 @@ toGraph automaton = Graph (map toVertex (FA.f_states automaton))
 
 toVertex :: FA.State -> Vertex
 toVertex state = Vertex { f_stateID = FA.f_stateID state
-                        , f_neighbors = map FA.f_stateID . map FA.f_toState $ FA.f_transitions state
+                        , f_neighbors = map FA.f_toState $ FA.f_transitions state
                         , f_isAccepting = FA.f_isAccepting state
                         , f_distance = 0
                         , f_parent = -1
@@ -142,6 +142,6 @@ getTransitionLetters automaton graph vertex priorLetters
     findChar = FA.f_inputLetter findTransition
     findTransition :: FA.Transition
     findTransition = head
-                   . filter (\transition -> FA.f_stateID (FA.f_fromState transition) == f_stateID parentVertex
-                              && FA.f_stateID (FA.f_toState transition) == f_stateID vertex)
+                   . filter (\transition ->  FA.f_fromState transition == f_stateID parentVertex
+                              && FA.f_toState transition == f_stateID vertex)
                    $ FA.getTransitions (FA.f_states automaton)

@@ -33,9 +33,9 @@ data State = State { f_stateID :: StateID
                    , f_transitions :: [Transition]
                    } deriving (Show, Eq)
 
-data Transition = Transition { f_fromState :: State
+data Transition = Transition { f_fromState :: StateID
                              , f_inputLetter :: Char
-                             , f_toState :: State
+                             , f_toState :: StateID
                              } deriving (Show, Eq)
 
 type DFA = Automaton
@@ -79,15 +79,15 @@ isNFA = not . isDFA
 -- -------------------------------------------------------------------
 
 type ConvID = [StateID]
-data ConvState = ConvState { convID :: ConvID
-                           , convIsInitial :: Bool
-                           , convIsAccepting :: Bool
-                           , convTransitions :: [ConvTransition]
+data ConvState = ConvState { f_convID :: ConvID
+                           , f_convIsInitial :: Bool
+                           , f_convIsAccepting :: Bool
+                           , f_convTransitions :: [ConvTransition]
                            } deriving (Eq, Show)
 
-data ConvTransition = ConvTransition { convFromState :: ConvState
-                                     , convInputLetter :: Char
-                                     , convToState :: ConvState
+data ConvTransition = ConvTransition { f_convFromState :: ConvID
+                                     , f_convInputLetter :: Char
+                                     , f_convToState :: ConvID
                                      } deriving (Eq, Show)
 
 toDFA :: Automaton -> DFA
@@ -111,17 +111,17 @@ initConvStates :: [State] -> [ConvState]
 initConvStates = map initState . powerset . map f_stateID
   where
     initState :: [StateID] -> ConvState
-    initState stateIDs = ConvState { convID = stateIDs
-                                   , convIsInitial = False
-                                   , convIsAccepting = False
-                                   , convTransitions = [] }
+    initState stateIDs = ConvState { f_convID = stateIDs
+                                   , f_convIsInitial = False
+                                   , f_convIsAccepting = False
+                                   , f_convTransitions = [] }
     powerset :: [a] -> [[a]]
     powerset = Monad.filterM (const [True, False])
 
 
 addInitialState :: [State] -> [ConvState] -> [ConvState]
-addInitialState states = map (\convState -> if ((convID convState) == initialStateID)
-                                            then convState { convIsInitial = True }
+addInitialState states = map (\convState -> if ((f_convID convState) == initialStateID)
+                                            then convState { f_convIsInitial = True }
                                             else convState)
   where
     initialStateID :: ConvID
@@ -132,11 +132,11 @@ addInitialState states = map (\convState -> if ((convID convState) == initialSta
 
 addAcceptingStates :: [State] -> [ConvState] -> [ConvState]
 addAcceptingStates states = map (\convState -> if not . null . acceptingIntersection $ convState
-                                               then convState { convIsAccepting = True }
+                                               then convState { f_convIsAccepting = True }
                                                else convState)
   where
     acceptingIntersection :: ConvState -> ConvID
-    acceptingIntersection convState = (convID convState) `List.intersect` acceptingStateIDs
+    acceptingIntersection convState = (f_convID convState) `List.intersect` acceptingStateIDs
     acceptingStateIDs :: [StateID]
     acceptingStateIDs = map f_stateID (getAcceptingStates states)
 
@@ -145,7 +145,7 @@ addTransitionFunctions :: Alphabet -> [State] -> [ConvState] -> [ConvState]
 addTransitionFunctions alphabet states convStates = map addConvTransitions convStates
   where
     addConvTransitions :: ConvState -> ConvState
-    addConvTransitions convState = convState { convTransitions = findConvTransitions convState }
+    addConvTransitions convState = convState { f_convTransitions = findConvTransitions convState }
     findConvTransitions :: ConvState -> [ConvTransition]
     findConvTransitions convState = concat $ map (findConvTransitionsWithLetter convState) alphabet
     findConvTransitionsWithLetter :: ConvState -> Char -> [ConvTransition]
@@ -153,13 +153,13 @@ addTransitionFunctions alphabet states convStates = map addConvTransitions convS
        | null (getTransitionsForLetterAndState char convState)  = [createTransition convState char emptyConvState]
        | otherwise                                              = [createTransition convState char (findAccompanyingState convState char)]
     createTransition :: ConvState -> Char -> ConvState -> ConvTransition
-    createTransition from letter to = ConvTransition { convFromState = from
-                                                     , convInputLetter = letter
-                                                     , convToState = to }
+    createTransition from letter to = ConvTransition { f_convFromState = f_convID from
+                                                     , f_convInputLetter = letter
+                                                     , f_convToState = f_convID to }
     reduceFromStateToID :: [Transition] -> ConvID
-    reduceFromStateToID = List.sort . map f_stateID . map f_toState
+    reduceFromStateToID = List.sort . map f_toState
     getTransitionsForLetterAndState :: Char -> ConvState -> [Transition]
-    getTransitionsForLetterAndState char convState = filter (\transition -> f_stateID (f_fromState transition) `elem` (convID convState))
+    getTransitionsForLetterAndState char convState = filter (\transition -> (f_fromState transition) `elem` (f_convID convState))
                                                             (getTransitionsForLetter char)
     getTransitionsForLetter :: Char -> [Transition]
     getTransitionsForLetter char = filter (\transition ->  (f_inputLetter transition) == char) (getTransitions states)
@@ -172,43 +172,45 @@ addTransitionFunctions alphabet states convStates = map addConvTransitions convS
                                             Just x -> x
                                             Nothing -> failState
     failState :: ConvState
-    failState = ConvState {convID=[-1], convIsInitial=False, convIsAccepting=False, convTransitions=[]}
+    failState = ConvState {f_convID=[-1], f_convIsInitial=False, f_convIsAccepting=False, f_convTransitions=[]}
 
 
 removeUselessStates :: [ConvState] -> [ConvState]
-removeUselessStates convStates = filter (\cs -> convIsInitial cs || isReachable cs) convStates
+removeUselessStates convStates = filter (\cs -> f_convIsInitial cs || isReachable cs) convStates
   where
     isReachable :: ConvState -> Bool
-    isReachable convState = convID convState `elem` allToStates
+    isReachable convState = f_convID convState `elem` allToStates
     allToStates :: [ConvID]
-    allToStates = map convID . map convToState $ allTransitions
+    allToStates = map f_convToState allTransitions
     allTransitions :: [ConvTransition]
-    allTransitions = foldl (++) [] . map convTransitions $ convStates
+    allTransitions = foldl (++) [] . map f_convTransitions $ convStates
 
 
 convertBackStates :: [ConvState] -> [State]
 convertBackStates allConvStates = map convertState allConvStates
   where
     convertState :: ConvState -> State
-    convertState convState = State { f_stateID =  Maybe.fromMaybe (-1) (lookup (convID convState) incrementedStateIDs)
-                                   , f_isInitial = convIsInitial convState
-                                   , f_isAccepting = convIsAccepting convState
-                                   , f_transitions = map convertTransition (convTransitions convState) }
+    convertState convState = State { f_stateID =  convertID (f_convID convState)
+                                   , f_isInitial = f_convIsInitial convState
+                                   , f_isAccepting = f_convIsAccepting convState
+                                   , f_transitions = map convertTransition (f_convTransitions convState) }
     convertTransition :: ConvTransition -> Transition
-    convertTransition convTransition = Transition { f_fromState = convertState (convFromState convTransition)
-                                                  , f_inputLetter = convInputLetter convTransition
-                                                  , f_toState = convertState (convToState convTransition) }
+    convertTransition convTransition = Transition { f_fromState = convertID (f_convFromState convTransition)
+                                                  , f_inputLetter = f_convInputLetter convTransition
+                                                  , f_toState = convertID (f_convToState convTransition) }
+    convertID :: ConvID -> StateID
+    convertID convID = Maybe.fromMaybe (-1) (lookup convID incrementedStateIDs)
     incrementedStateIDs :: [(ConvID, StateID)]
     incrementedStateIDs = snd $ List.mapAccumL(\index conv -> (index + 1, (conv, index))) 0 allConvIDs
     allConvIDs :: [ConvID]
     allConvIDs = List.sortBy (Monoid.mconcat [Ord.comparing length, compare])
-               . map convID $ allConvStates
+               . map f_convID $ allConvStates
 
 getNullState :: [ConvState] -> Maybe ConvState
-getNullState = List.find (\state -> convID state == [])
+getNullState = List.find (\state -> f_convID state == [])
 
 getConvState :: ConvID -> [ConvState] -> Maybe ConvState
-getConvState targetID = List.find (\state -> convID state == targetID)
+getConvState targetID = List.find (\state -> f_convID state == targetID)
 
 
 -- -------------------------------------------------------------------

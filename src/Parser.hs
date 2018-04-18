@@ -209,20 +209,18 @@ addTransitions transitions states = map add states
     add :: FA.State -> FA.State
     add state = state { FA.f_transitions = findAll (FA.f_stateID state)}
     findAll :: StateID -> [FA.Transition]
-    findAll stateID = (convertTransitions states) . filter (matchingIDs stateID) $ transitions
+    findAll stateID = convertTransitions . filter (matchingIDs stateID) $ transitions
     matchingIDs :: StateID -> Transition -> Bool
     matchingIDs stateID transition = (f_fromState transition) == stateID
 
 
-convertTransitions :: [FA.State] -> [Transition] -> [FA.Transition]
-convertTransitions states = map convert
+convertTransitions :: [Transition] -> [FA.Transition]
+convertTransitions = map convert
   where
     convert :: Transition -> FA.Transition
-    convert transition = FA.Transition { FA.f_fromState = getState (f_fromState transition)
+    convert transition = FA.Transition { FA.f_fromState = f_fromState transition
                                        , FA.f_inputLetter = (f_letter transition)
-                                       , FA.f_toState = getState (f_toState transition) }
-    getState :: StateID -> FA.State
-    getState stateID = Maybe.fromJust (List.find (\state -> (FA.f_stateID state) == stateID) states)
+                                       , FA.f_toState = f_toState transition }
 
 
 addInitial :: StateID -> [FA.State] -> [FA.State]
