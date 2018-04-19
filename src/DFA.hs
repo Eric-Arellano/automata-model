@@ -74,7 +74,7 @@ initConvAutomaton automaton = ConvAutomaton { f_convAlphabet = FA.f_alphabet aut
                                             , f_convTransitions = convertTransitionFunctions automaton convertedStates }
   where
     convertedStates :: [ConvID]
-    convertedStates = powerset (FA.f_states automaton)
+    convertedStates = powerset . List.sort $ FA.f_states automaton
     powerset :: [a] -> [[a]]
     powerset = Monad.filterM (const [True, False])
 
@@ -91,7 +91,7 @@ convertAcceptingStates automaton convStateIDs = filter containsAcceptingID convS
 
 
 convertTransitionFunctions :: FA.Automaton -> [ConvID] -> [ConvTransition]
-convertTransitionFunctions automaton convStateIDs = foldl (++) [] . map findTransitions $ convStateIDs
+convertTransitionFunctions automaton convStateIDs = concat . map findTransitions $ convStateIDs
   where
     findTransitions :: ConvID -> [ConvTransition]
     findTransitions convID = map (createTransition convID) (FA.f_alphabet automaton)
@@ -100,7 +100,7 @@ convertTransitionFunctions automaton convStateIDs = foldl (++) [] . map findTran
                                                   , f_convInputLetter = char
                                                   , f_convToState = getAllToStates convID char }  -- [] if nothing found
     getAllToStates :: ConvID -> Char -> [FA.StateID]
-    getAllToStates convID char = List.nub . foldl (++) [] . map (getToStates char) $ convID
+    getAllToStates convID char = List.sort . List.nub . concat . map (getToStates char) $ convID
     getToStates :: Char -> FA.StateID -> [FA.StateID]
     getToStates char stateID = map FA.f_toState
                              . filter (\t ->  (FA.f_inputLetter t) == char && (FA.f_fromState t) == stateID)
