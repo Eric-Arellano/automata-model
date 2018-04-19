@@ -8,7 +8,6 @@ module FiniteAutomata
   , isNFA
   , isDFA
   , complement
-  , intersection
   ) where
 
 
@@ -169,6 +168,3 @@ complement dfa = dfa { f_acceptingStates = invertedAcceptStates }
   where
     invertedAcceptStates = filter (\s -> not (s `List.elem` originalAcceptStates)) (f_states dfa)
     originalAcceptStates = f_acceptingStates dfa
-
-intersection :: DFA -> DFA -> DFA
-intersection = undefined

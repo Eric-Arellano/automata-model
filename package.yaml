@@ -18,6 +18,7 @@ library:
     - Output
     - Parser
     - ShortestString
+    - Intersection
 
 executables:
   automata-model-exe:
