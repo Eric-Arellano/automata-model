@@ -15,6 +15,7 @@ library:
   source-dirs: src
   exposed-modules:
     - FiniteAutomata
+    - DFA
     - Output
     - Parser
     - ShortestString

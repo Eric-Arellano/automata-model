@@ -1,4 +1,4 @@
-module ShortestString (shortest) where
+module ShortestString (shortest, findReachable) where
 
 -- BFS algorithm adapted from https://lettier.github.io/posts/2016-04-29-breadth-first-search-in-haskell.html
 
@@ -13,8 +13,15 @@ shortest automaton = case (shortestAcceptingVertex automaton graph) of
                         Just vertex -> accompanyingString automaton graph vertex
                         Nothing -> ""
   where
-    graph = addDistances (findVertex emptyGraph (FA.f_initialState automaton)) emptyGraph
-    emptyGraph = toGraph automaton
+    graph = toGraphWithDistances automaton
+
+
+findReachable :: FA.Automaton -> [FA.StateID]
+findReachable automaton = map f_stateID (x:xs)
+  where
+    (Graph (x:xs)) = graph
+    graph :: Graph
+    graph = toGraphWithDistances automaton
 
 
 -- -------------------------------------------------
@@ -49,6 +56,11 @@ findVertex (Graph vertexes) targetID = Maybe.fromJust . List.find (\vertex -> f_
 -- -------------------------------------------------
 -- BFS
 -- -------------------------------------------------
+
+toGraphWithDistances :: FA.Automaton -> Graph
+toGraphWithDistances automaton = addDistances (findVertex emptyGraph (FA.f_initialState automaton)) emptyGraph
+  where
+    emptyGraph = toGraph automaton
 
 addDistances :: Vertex -> Graph -> Graph
 addDistances startVertex inGraph = bfs inGraph outGraph queue seen

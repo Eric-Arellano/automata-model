@@ -5,7 +5,7 @@ import qualified System.Environment as Environment
 import qualified System.Exit        as Exit
 
 import qualified Parser
-import qualified FiniteAutomata
+import qualified DFA
 import qualified Intersection
 import qualified Output
 import qualified ShortestString
@@ -21,10 +21,10 @@ main = do
   exitIfParseFail spec "specification automaton"
   exitIfParseFail system "system automaton"
   -- Convert to DFA
-  let specDFA = FiniteAutomata.toDFA . Maybe.fromJust $ spec
-  let systemDFA = FiniteAutomata.toDFA . Maybe.fromJust $ system
+  let specDFA = DFA.toDFA . Maybe.fromJust $ spec
+  let systemDFA = DFA.toDFA . Maybe.fromJust $ system
   -- Complement & intersection
-  let specComplement = FiniteAutomata.complement specDFA
+  let specComplement = DFA.complement specDFA
   let intersection = Intersection.intersection specComplement systemDFA
 --  let intersection = Intersection.intersection (Maybe.fromJust spec) (Maybe.fromJust system)
 --  let string = ShortestString.shortest specDFA
@@ -33,8 +33,8 @@ main = do
   let string = ShortestString.shortest intersection
   let consoleOutput = if null string then "Accepted" else string
   print consoleOutput
-  writeFile "output/1208487250_Milestone2_Dp.txt" (unlines (Output.automaton intersection))
---  writeFile "output/1208487250_Milestone2_Dp.txt" (unlines (Output.automata specDFA systemDFA))
+--  writeFile "output/1208487250_Milestone2_Dp.txt" (unlines (Output.automaton intersection))
+  writeFile "output/1208487250_Milestone2_Dp.txt" (unlines (Output.automata specDFA systemDFA))
 --  writeFile "output/1208487250_Milestone2_Dp.txt" (unlines (Output.automata (Maybe.fromJust spec) (Maybe.fromJust system)))
   writeFile "output/1208487250_Milestone2_str.txt" string
 
@@ -43,7 +43,7 @@ getFileName :: IO String
 getFileName = do
     args <- Environment.getArgs
     let fileName = case args of
-                     [] -> "input/m2_intersection.txt"
+                     [] -> "input/m2_basic.txt"
 --                     [] -> "input/m1_nfa-simple.txt"
                      x:_ -> x
     return fileName

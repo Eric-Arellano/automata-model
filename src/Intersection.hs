@@ -4,8 +4,9 @@ import qualified Data.List      as List
 import qualified Data.Maybe     as Maybe
 
 import qualified FiniteAutomata as FA
+import qualified DFA            as DFA
 
-intersection :: FA.DFA -> FA.DFA -> FA.DFA
+intersection :: DFA.DFA -> DFA.DFA -> DFA.DFA
 intersection dfa1 dfa2 = convertBack (initAutomaton dfa1 dfa2)
 
 
@@ -26,7 +27,7 @@ data IntersectTransition = IntersectTransition { f_intersectFromState :: Interse
 cartesianProduct :: [a] -> [b] -> [(a, b)]
 cartesianProduct xs ys = [(x, y) | x <- xs, y <- ys]
 
-initAutomaton :: FA.DFA -> FA.DFA -> IntersectAutomaton
+initAutomaton :: DFA.DFA -> DFA.DFA -> IntersectAutomaton
 initAutomaton dfa1 dfa2 = IntersectAutomaton { f_intersectAlphabet = FA.f_alphabet dfa1
                                              , f_intersectStates = newStates
                                              , f_intersectInitialState = ((FA.f_initialState dfa1), (FA.f_initialState dfa2))
@@ -42,14 +43,14 @@ initAutomaton dfa1 dfa2 = IntersectAutomaton { f_intersectAlphabet = FA.f_alphab
                                                             , f_intersectInputLetter = char
                                                             , f_intersectToState = (getToState char dfa1 (fst intersectID),
                                                                                     getToState char dfa2 (snd intersectID)) }
-    getToState :: Char -> FA.DFA -> FA.StateID -> FA.StateID
+    getToState :: Char -> DFA.DFA -> FA.StateID -> FA.StateID
     getToState char dfa stateID = Maybe.fromMaybe (-3)
                                 . fmap FA.f_toState
                                 . List.find (\t ->  (FA.f_inputLetter t) == char && (FA.f_fromState t) == stateID)
                                 $ FA.f_transitions dfa
 
 
-convertBack :: IntersectAutomaton -> FA.DFA
+convertBack :: IntersectAutomaton -> DFA.DFA
 convertBack intersectAutomaton = FA.Automaton { FA.f_alphabet = f_intersectAlphabet intersectAutomaton
                                               , FA.f_states = map convertID (f_intersectStates intersectAutomaton)
                                               , FA.f_initialState = convertID (f_intersectInitialState intersectAutomaton)
