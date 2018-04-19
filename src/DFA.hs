@@ -99,7 +99,7 @@ convertTransitionFunctions automaton convStateIDs = foldl (++) [] . map findTran
                                                   , f_convInputLetter = char
                                                   , f_convToState = getAllToStates convID char }  -- [] if nothing found
     getAllToStates :: ConvID -> Char -> [FA.StateID]
-    getAllToStates convID char = foldl (++) [] . map (getToStates char) $ convID
+    getAllToStates convID char = List.nub . foldl (++) [] . map (getToStates char) $ convID
     getToStates :: Char -> FA.StateID -> [FA.StateID]
     getToStates char stateID = map FA.f_toState
                              . filter (\t ->  (FA.f_inputLetter t) == char && (FA.f_fromState t) == stateID)

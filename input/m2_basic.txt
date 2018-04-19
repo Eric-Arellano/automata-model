@@ -14,6 +14,7 @@ b
 % Transition function
 1 a 1
 1 b 1
+1 b 2
 2 b 2
 % Initial state
 1
