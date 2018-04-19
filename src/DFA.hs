@@ -4,6 +4,7 @@ module DFA
   , isNFA
   , isDFA
   , complement
+  , removeUselessStates
   ) where
 
 

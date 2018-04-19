@@ -7,7 +7,10 @@ import qualified FiniteAutomata as FA
 import qualified DFA            as DFA
 
 intersection :: DFA.DFA -> DFA.DFA -> DFA.DFA
-intersection dfa1 dfa2 = convertBack (initAutomaton dfa1 dfa2)
+intersection dfa1 dfa2 = DFA.removeUselessStates
+                       . convertBack
+                       . initAutomaton dfa1
+                       $ dfa2
 
 
 type IntersectID = (FA.StateID, FA.StateID)
