@@ -1,4 +1,4 @@
-module Output (automata) where
+module Output (automata, automaton) where
 
 import qualified Data.List      as List
 import qualified Data.Monoid    as Monoid
@@ -6,14 +6,17 @@ import qualified FiniteAutomata as FA
 
 automata :: FA.Automaton -> FA.Automaton -> [String]
 automata fa1 fa2 = alphabet fa1
-                 ++ automaton fa1 "% Specification automaton"
-                 ++ automaton fa2 "% System automaton"
+                 ++ automatonHelper fa1 "% Specification automaton"
+                 ++ automatonHelper fa2 "% System automaton"
 
-automaton :: FA.Automaton -> String -> [String]
-automaton fa name = [name]
-                  ++ transitions fa
-                  ++ initialState fa
-                  ++ finalStates fa
+automaton :: FA.Automaton -> [String]
+automaton fa = alphabet fa ++ automatonHelper fa "% Resulting automaton"
+
+automatonHelper :: FA.Automaton -> String -> [String]
+automatonHelper fa name = [name]
+                        ++ transitions fa
+                        ++ initialState fa
+                        ++ finalStates fa
 
 alphabet :: FA.Automaton -> [String]
 alphabet fa = ["% Input alphabet"] ++ outputAlphabet

@@ -1,0 +1,14 @@
+% Input alphabet
+a
+% Resulting automaton
+% Transition function
+1 a 5
+2 a 6
+3 a 4
+4 a 2
+5 a 3
+6 a 1
+% Initial state
+1
+% Final states
+4

@@ -24,17 +24,17 @@ main = do
   let specDFA = FiniteAutomata.toDFA . Maybe.fromJust $ spec
   let systemDFA = FiniteAutomata.toDFA . Maybe.fromJust $ system
   -- Complement & intersection
---  let specComplement = FiniteAutomata.complement specDFA
---  let intersection = Intersection.intersection specComplementDFA systemDFA
-  let intersection = Intersection.intersection (Maybe.fromJust spec) (Maybe.fromJust system)
-  print intersection
+  let specComplement = FiniteAutomata.complement specDFA
+  let intersection = Intersection.intersection specComplement systemDFA
+--  let intersection = Intersection.intersection (Maybe.fromJust spec) (Maybe.fromJust system)
 --  let string = ShortestString.shortest specDFA
 --  let string = ShortestString.shortest systemDFA
 --  let string = ShortestString.shortest specComplement
   let string = ShortestString.shortest intersection
   let consoleOutput = if null string then "Accepted" else string
   print consoleOutput
-  writeFile "output/1208487250_Milestone2_Dp.txt" (unlines (Output.automata specDFA systemDFA))
+  writeFile "output/1208487250_Milestone2_Dp.txt" (unlines (Output.automaton intersection))
+--  writeFile "output/1208487250_Milestone2_Dp.txt" (unlines (Output.automata specDFA systemDFA))
 --  writeFile "output/1208487250_Milestone2_Dp.txt" (unlines (Output.automata (Maybe.fromJust spec) (Maybe.fromJust system)))
   writeFile "output/1208487250_Milestone2_str.txt" string
 

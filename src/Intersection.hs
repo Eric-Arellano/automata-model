@@ -2,9 +2,6 @@ module Intersection (intersection) where
 
 import qualified Data.List      as List
 import qualified Data.Maybe     as Maybe
-import qualified Control.Monad  as Monad
-import qualified Data.Monoid    as Monoid
-import qualified Data.Ord       as Ord
 
 import qualified FiniteAutomata as FA
 
