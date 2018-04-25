@@ -27,5 +27,4 @@ Assumes Haskell Stack installed.
 `:q`
 
 ## Assumptions
-1. The provided automata do not include an ID of 0. This is reserved to represent the empty set when converting NFAs to DFAs.
-2. It is okay to renumber the states when converting from NFA -> DFA or taking the intersection.
+1. It is okay to renumber the states when converting from NFA -> DFA or taking the intersection.

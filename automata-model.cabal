@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 43db3113e8a2283a41b72e907b360ee03fb725dbd64096f22ce2abdf4cf5cb0e
+-- hash: a4b99fa964e1d1bac727fa93c2ecc28de5ac5d0993f26d6b0f353ee951a64051
 
 name:           automata-model
 version:        0.1.0.0
@@ -38,7 +38,7 @@ executable automata-model-exe
   main-is: Main.hs
   hs-source-dirs:
       app
-  ghc-options: -Wall
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns
   build-depends:
       automata-model
     , base >=4.9 && <5

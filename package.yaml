@@ -27,5 +27,8 @@ executables:
     source-dirs:    app
     ghc-options:
     - -Wall
+    - -Wcompat
+    - -Wincomplete-record-updates
+    - -Wincomplete-uni-patterns
     dependencies:
     - automata-model
