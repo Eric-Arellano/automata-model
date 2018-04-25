@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a4b99fa964e1d1bac727fa93c2ecc28de5ac5d0993f26d6b0f353ee951a64051
+-- hash: 25e9a27616cd8ab2c9537cd2e9f49fbfdc7a9a727356c1b5ccb39813a13bc42f
 
 name:           automata-model
 version:        0.1.0.0
@@ -22,6 +22,7 @@ library
       src
   build-depends:
       base >=4.9 && <5
+    , directory
     , text
   exposed-modules:
       FiniteAutomata
@@ -42,6 +43,7 @@ executable automata-model-exe
   build-depends:
       automata-model
     , base >=4.9 && <5
+    , directory
     , text
   other-modules:
       Paths_automata_model

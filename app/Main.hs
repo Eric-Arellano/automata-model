@@ -1,6 +1,7 @@
 module Main where
 
 import qualified Data.Maybe         as Maybe
+import qualified System.Directory   as Directory
 import qualified System.Environment as Environment
 import qualified System.Exit        as Exit
 
@@ -31,6 +32,7 @@ main = do
                       then "The system satisfies the specification!"
                       else "The system does not satisfy the specification! Counterexample: " ++ string
   print consoleOutput
+  Directory.createDirectoryIfMissing False "output"
   writeFile "output/1208487250_Final_Dp.txt" (unlines (Output.automaton intersection))
   writeFile "output/1208487250_Final_str.txt" string
 
