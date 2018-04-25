@@ -5,6 +5,7 @@ module DFA
   , isDFA
   , complement
   , removeUselessStates
+  , renumberStates
   ) where
 
 
@@ -60,7 +61,8 @@ data ConvTransition = ConvTransition { f_convFromState :: ConvID
 toDFA :: FA.Automaton -> DFA
 toDFA automaton
   | isDFA automaton = automaton
-  | otherwise       = removeUselessStates
+  | otherwise       = renumberStates
+                    . removeUselessStates
                     . convertBack
                     . initConvAutomaton
                     $ automaton
@@ -126,6 +128,10 @@ convertBack convAutomaton = FA.Automaton { FA.f_alphabet = f_convAlphabet convAu
     allConvIDs = List.sortBy (Monoid.mconcat [Ord.comparing length, compare]) (f_convStates convAutomaton)
 
 
+-- -------------------------------------------------------------------
+-- Modify DFA
+-- -------------------------------------------------------------------
+
 removeUselessStates :: FA.Automaton -> FA.Automaton
 removeUselessStates automaton = automaton { FA.f_states = validStates
                                           , FA.f_acceptingStates = reducedAccepting
@@ -139,9 +145,23 @@ removeUselessStates automaton = automaton { FA.f_states = validStates
     reducedAccepting = filter (\a -> a `List.elem` validStates) (FA.f_acceptingStates automaton)
 
 
--- -------------------------------------------------------------------
--- Modify DFA
--- -------------------------------------------------------------------
+renumberStates :: FA.Automaton -> FA.Automaton
+renumberStates automaton = automaton { FA.f_states = map convertID (FA.f_states automaton)
+                                     , FA.f_initialState = convertID (FA.f_initialState automaton)
+                                     , FA.f_acceptingStates = map convertID (FA.f_acceptingStates automaton)
+                                     , FA.f_transitions = map convertTransition (FA.f_transitions automaton)}
+  where
+    convertID :: FA.StateID -> FA.StateID
+    convertID originalID = Maybe.fromMaybe (-1) (lookup originalID incrementedStateIDs)
+    convertTransition :: FA.Transition -> FA.Transition
+    convertTransition transition = FA.Transition { FA.f_fromState = convertID (FA.f_fromState transition)
+                                                 , FA.f_inputLetter = FA.f_inputLetter transition
+                                                 , FA.f_toState = convertID (FA.f_toState transition) }
+    incrementedStateIDs :: [(FA.StateID, FA.StateID)]
+    incrementedStateIDs = snd $ List.mapAccumL(\index conv -> (index + 1, (conv, index))) 0 allConvIDs
+    allConvIDs :: [FA.StateID]
+    allConvIDs = List.sort (FA.f_states automaton)
+
 
 complement :: DFA -> DFA
 complement dfa = dfa { FA.f_acceptingStates = invertedAcceptStates }

@@ -7,7 +7,8 @@ import qualified FiniteAutomata as FA
 import qualified DFA            as DFA
 
 intersection :: DFA.DFA -> DFA.DFA -> DFA.DFA
-intersection dfa1 dfa2 = DFA.removeUselessStates
+intersection dfa1 dfa2 = DFA.renumberStates
+                       . DFA.removeUselessStates
                        . convertBack
                        . initAutomaton dfa1
                        $ dfa2
