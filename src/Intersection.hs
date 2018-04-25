@@ -39,7 +39,7 @@ initAutomaton dfa1 dfa2 = IntersectAutomaton { f_intersectAlphabet = FA.f_alphab
                                              , f_intersectTransitions = convertTransitions }
   where
     newStates = cartesianProduct (FA.f_states dfa1) (FA.f_states dfa2)
-    convertTransitions = foldl (++) [] . map findTransitions $ newStates
+    convertTransitions = concat . map findTransitions $ newStates
     findTransitions :: IntersectID -> [IntersectTransition]
     findTransitions convID = map (createTransition convID) (FA.f_alphabet dfa1)
     createTransition :: IntersectID -> Char -> IntersectTransition
