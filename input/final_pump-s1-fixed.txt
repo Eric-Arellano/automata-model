@@ -1,0 +1,42 @@
+% Input alphabet
+c
+p
+e
+f
+r
+b
+% Specification automaton
+% Transition function
+0 c 0
+0 p 0
+0 r 0
+0 b 0
+0 f 0
+0 e 1
+1 b 2
+2 c 2
+2 p 2
+2 r 2
+2 b 2
+2 f 2
+2 e 2
+% Initial state
+0
+% Final states
+0
+2
+% System automaton
+% Transition function
+0 c 1
+1 p 2
+1 r 0
+2 r 0
+2 e 4
+4 b 5
+5 b 5
+5 f 3
+3 r 0
+% Initial state
+0
+% Final states
+0

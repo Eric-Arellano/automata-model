@@ -27,17 +27,19 @@ main = do
   let specComplement = DFA.complement specDFA
   let intersection = Intersection.intersection specComplement systemDFA
   let string = ShortestString.shortest intersection
-  let consoleOutput = if null string then "Accepted" else string
+  let consoleOutput = if null string
+                      then "The system satisfies the specification!"
+                      else "The system does not satisfy the specification! Counterexample: " ++ string
   print consoleOutput
-  writeFile "output/1208487250_Milestone2_Dp.txt" (unlines (Output.automaton intersection))
-  writeFile "output/1208487250_Milestone2_str.txt" string
+  writeFile "output/1208487250_Final_Dp.txt" (unlines (Output.automaton intersection))
+  writeFile "output/1208487250_Final_str.txt" string
 
 
 getFileName :: IO String
 getFileName = do
     args <- Environment.getArgs
     let fileName = case args of
-                     [] -> "input/m2_basic.txt"
+                     [] -> "input/final_pump-s1-fixed.txt"
                      x:_ -> x
     return fileName
 
